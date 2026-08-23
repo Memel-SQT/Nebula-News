@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+:root {
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-nebula-bg text-nebula-text antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+
+/* Ambient nebula glow behind the whole app, same slow-drift treatment as
+   the original Nebula desktop app so the identity carries over exactly. */
+.bg-glow {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--tw-gradient-stops, none);
+}
+
+.nebula-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.nebula-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.nebula-scrollbar::-webkit-scrollbar-thumb {
+  background: #2a2a45;
+  border-radius: 999px;
+}
+.nebula-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #8b5cf6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

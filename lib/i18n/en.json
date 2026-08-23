@@ -1,0 +1,67 @@
+{
+  "app": {
+    "name": "Nebula News",
+    "tagline": "Your daily briefing on the world"
+  },
+  "nav": {
+    "home": "Home",
+    "briefing": "Today's Briefing",
+    "favorites": "Favorites"
+  },
+  "regions": {
+    "FRANCE": "France & French-speaking Europe",
+    "NORTH_AMERICA": "North America",
+    "ANGLOSAXON": "Anglo-Saxon World",
+    "GLOBAL": "Global"
+  },
+  "categories": {
+    "WORLD": "World",
+    "POLITICS": "Politics",
+    "ECONOMY": "Economy",
+    "TECH": "Tech",
+    "SCIENCE": "Science",
+    "CULTURE": "Culture",
+    "ENVIRONMENT": "Environment",
+    "SPORTS": "Sports",
+    "HEALTH": "Health"
+  },
+  "languages": {
+    "FR": "French",
+    "EN": "English"
+  },
+  "filters": {
+    "allRegions": "All regions",
+    "allCategories": "All topics",
+    "allLanguages": "All languages",
+    "search": "Search the news...",
+    "today": "Today",
+    "clear": "Clear filters"
+  },
+  "home": {
+    "title": "The world, at a glance",
+    "subtitle": "A curated feed of neutral news from France, North America, and the Anglo-Saxon world.",
+    "empty": "No articles match these filters yet.",
+    "loadMore": "Load more articles",
+    "briefingCta": "See today's briefing",
+    "sourceCount": "{count} sources tracked"
+  },
+  "briefing": {
+    "title": "Today's Briefing",
+    "subtitle": "The essential world news, distilled into {count} key stories.",
+    "themesTitle": "Today's big themes",
+    "whyItMatters": "Why it matters",
+    "empty": "Today's briefing is still being prepared. Check back in a few minutes."
+  },
+  "article": {
+    "readOriginal": "Read the original article",
+    "source": "Source",
+    "publishedOn": "Published on",
+    "relatedTopics": "Related topics",
+    "backToHome": "Back to home"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong.",
+    "minutesAgo": "{n} min ago"
+  }
+}

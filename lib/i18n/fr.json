@@ -1,0 +1,67 @@
+{
+  "app": {
+    "name": "Nebula News",
+    "tagline": "Votre briefing quotidien sur le monde"
+  },
+  "nav": {
+    "home": "Accueil",
+    "briefing": "Briefing du jour",
+    "favorites": "Favoris"
+  },
+  "regions": {
+    "FRANCE": "France & Europe francophone",
+    "NORTH_AMERICA": "Amérique du Nord",
+    "ANGLOSAXON": "Monde anglo-saxon",
+    "GLOBAL": "International"
+  },
+  "categories": {
+    "WORLD": "Monde",
+    "POLITICS": "Politique",
+    "ECONOMY": "Économie",
+    "TECH": "Technologie",
+    "SCIENCE": "Science",
+    "CULTURE": "Culture",
+    "ENVIRONMENT": "Environnement",
+    "SPORTS": "Sport",
+    "HEALTH": "Santé"
+  },
+  "languages": {
+    "FR": "Français",
+    "EN": "Anglais"
+  },
+  "filters": {
+    "allRegions": "Toutes les régions",
+    "allCategories": "Tous les sujets",
+    "allLanguages": "Toutes les langues",
+    "search": "Rechercher une actualité...",
+    "today": "Aujourd'hui",
+    "clear": "Réinitialiser"
+  },
+  "home": {
+    "title": "Le monde, en un coup d'œil",
+    "subtitle": "Une sélection d'actualités neutres, venues de France, d'Amérique du Nord et du monde anglo-saxon.",
+    "empty": "Aucun article ne correspond à ces filtres pour le moment.",
+    "loadMore": "Voir plus d'articles",
+    "briefingCta": "Voir le briefing du jour",
+    "sourceCount": "{count} sources suivies"
+  },
+  "briefing": {
+    "title": "Briefing du jour",
+    "subtitle": "L'essentiel de l'actualité mondiale, résumé en {count} histoires clés.",
+    "themesTitle": "Les grands thèmes du jour",
+    "whyItMatters": "Pourquoi c'est important",
+    "empty": "Le briefing du jour est en cours de préparation. Revenez dans quelques minutes."
+  },
+  "article": {
+    "readOriginal": "Lire l'article original",
+    "source": "Source",
+    "publishedOn": "Publié le",
+    "relatedTopics": "Sujets liés",
+    "backToHome": "Retour à l'accueil"
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Une erreur est survenue.",
+    "minutesAgo": "il y a {n} min"
+  }
+}
