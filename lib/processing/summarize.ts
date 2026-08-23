@@ -1,4 +1,4 @@
-import type { Language } from "@prisma/client";
+import type { Language } from "@/types";
 
 /** Splits on sentence-ending punctuation while keeping it, good enough for FR/EN news prose. */
 function splitSentences(text: string): string[] {

@@ -1,4 +1,4 @@
-import type { CategoryKey } from "@prisma/client";
+import type { CategoryKey } from "@/types";
 
 const CATEGORY_BOOST: Partial<Record<CategoryKey, number>> = {
   WORLD: 1.15,

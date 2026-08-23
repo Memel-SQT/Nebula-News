@@ -1,6 +1,13 @@
-import type { CategoryKey, Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import type { ArticleCard, ArticleFilters, BriefingResponse } from "@/types";
+import type {
+  ArticleCard,
+  ArticleFilters,
+  BriefingResponse,
+  CategoryKey,
+  Language,
+  Region,
+} from "@/types";
 
 const cardSelect = {
   id: true,
@@ -26,13 +33,16 @@ function toCard(article: RawArticle): ArticleCard {
     originalUrl: article.originalUrl,
     summary: article.summary,
     imageUrl: article.imageUrl,
-    region: article.region,
-    language: article.language,
+    // SQLite has no native enum type (see schema.prisma), so these columns
+    // come back as plain `string` from Prisma — narrow them here, at the
+    // one boundary where DB rows become app-typed ArticleCards.
+    region: article.region as Region,
+    language: article.language as Language,
     publishedAt: article.publishedAt.toISOString(),
     importanceScore: article.importanceScore,
     isBriefingPick: article.isBriefingPick,
     source: article.source,
-    categories: article.categories.map((c) => c.category.key),
+    categories: article.categories.map((c) => c.category.key as CategoryKey),
   };
 }
 
@@ -55,11 +65,11 @@ export async function getArticles(filters: ArticleFilters) {
             lte: filters.to ? new Date(filters.to) : undefined,
           }
         : undefined,
+    // SQLite's `contains` doesn't support Prisma's `mode: "insensitive"`
+    // (Postgres/Mongo only) — SQLite's LIKE is already case-insensitive for
+    // ASCII by default, which covers FR/EN news text well enough.
     OR: filters.q
-      ? [
-          { title: { contains: filters.q, mode: "insensitive" } },
-          { summary: { contains: filters.q, mode: "insensitive" } },
-        ]
+      ? [{ title: { contains: filters.q } }, { summary: { contains: filters.q } }]
       : undefined,
   };
 
@@ -92,10 +102,7 @@ export async function searchArticles(q: string, limit = 20) {
   if (!q.trim()) return [];
   const items = await db.article.findMany({
     where: {
-      OR: [
-        { title: { contains: q, mode: "insensitive" } },
-        { summary: { contains: q, mode: "insensitive" } },
-      ],
+      OR: [{ title: { contains: q } }, { summary: { contains: q } }],
     },
     select: cardSelect,
     orderBy: [{ publishedAt: "desc" }],

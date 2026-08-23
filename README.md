@@ -3,6 +3,11 @@
 A daily world news briefing, aggregated from neutral, reputable French and
 English sources and presented in a premium, dark, cosmic interface.
 
+Ships as a **Windows desktop app** — zero setup, no server to run or
+database to host, just an installer. The same code also works as a
+Postgres-backed hosted web app if you'd rather deploy it (see
+[Running as a hosted web app](#running-as-a-hosted-web-app-instead)).
+
 Visual identity is shared 1:1 with the [Nebula](../Nebula) desktop app: the
 same black → navy → violet gradient, card system, and typography, ported from
 its `theme.css` into Tailwind tokens (see [Design system](#design-system)).
@@ -13,12 +18,14 @@ its `theme.css` into Tailwind tokens (see [Design system](#design-system)).
 - **Tailwind CSS**, hand-rolled component primitives in `components/ui`
   (no external UI kit — kept the dependency surface small and the tokens
   identical to the Nebula desktop app's theme)
-- **PostgreSQL** via **Prisma** (works with Supabase, Neon, Railway, or any
-  managed/self-hosted Postgres)
+- **SQLite** via **Prisma** — a single local file, no server to run. The
+  desktop build keeps it under the OS per-user app-data folder, mirroring
+  how the Nebula desktop app stores its own `nebula.db`
 - **rss-parser** for feed ingestion; optional **Claude API** for LLM
   summarization (falls back to a built-in extractive summarizer when no key
   is set, so the app runs with zero external API keys)
-- Deploy target: **Vercel**, with **Vercel Cron** driving scheduled ingestion
+- **Electron** wraps the built Next.js server (`output: "standalone"`) for
+  the desktop build; **electron-builder** produces the Windows installer
 
 Auth (Clerk/Auth.js) is *not* wired up — the `User`/`Favorite` tables in
 `prisma/schema.prisma` are ready for it, but adding a full auth flow was out
@@ -36,7 +43,7 @@ app/
     articles/route.ts       GET  filtered article list
     briefing/today/route.ts GET  today's briefing
     search/route.ts         GET  keyword search
-    ingest/route.ts          GET/POST ingestion trigger (Vercel Cron + manual)
+    ingest/route.ts          GET/POST ingestion trigger (cron / Electron scheduler / manual)
 components/
   ui/          Badge, Button, Card — shared primitives
   layout/      Navbar, PageShell, SectionHeader, BgGlow
@@ -50,21 +57,26 @@ lib/
   sources/config.ts        the configurable source list
   ingestion/               fetchFeeds, normalize, run (orchestrator)
   processing/               classify (topics), score (importance), summarize
+desktop/
+  main.js                  Electron main process (spawns the server, opens the window)
+  icon.ico                 app/installer icon
 prisma/
   schema.prisma
   seed.ts                  seeds categories + sources from lib/sources/config.ts
 scripts/
   run-ingestion.ts         `npm run ingest` entrypoint
+  prepare-desktop-build.mjs builds the standalone server bundle for packaging
+  build-template-db.mjs    builds the seeded, article-free DB shipped in the installer
+  after-pack.cjs           electron-builder hook: copies the standalone server + its node_modules
 types/                     shared TS types (ArticleCard, BriefingResponse, ...)
 ```
 
-## Getting started
+## Getting started (development)
 
 ### 1. Prerequisites
 
 - Node.js 20+
-- A PostgreSQL database (a free [Neon](https://neon.tech) or
-  [Supabase](https://supabase.com) project works well for this)
+- Nothing else — SQLite is a local file, no database server to install.
 
 ### 2. Install
 
@@ -73,13 +85,10 @@ npm install
 cp .env.example .env
 ```
 
-Fill in `.env`:
-
-- `DATABASE_URL` — your Postgres connection string
-- `INGEST_SECRET` — any random string; protects `POST /api/ingest` from
-  unauthenticated callers (Vercel Cron auth is separate, see below)
-- `ANTHROPIC_API_KEY` — optional; enables LLM summaries instead of the
-  extractive fallback
+`.env` defaults to a local `prisma/dev.db` file. Optionally set
+`ANTHROPIC_API_KEY` to enable LLM summaries instead of the extractive
+fallback. `INGEST_SECRET` only matters if you deploy this as a hosted web
+app (see below) — leave it unset for local dev.
 
 ### 3. Database
 
@@ -88,7 +97,7 @@ npx prisma migrate dev --name init
 npm run seed
 ```
 
-`npm run seed` seeds the `Category` enum values and the source list from
+`npm run seed` seeds the category list and the sources from
 [`lib/sources/config.ts`](lib/sources/config.ts) into the `Source` table.
 
 ### 4. Fetch the first batch of articles
@@ -108,6 +117,61 @@ npm run dev
 ```
 
 Open http://localhost:3000.
+
+## Building the desktop installer
+
+```bash
+npm run build:desktop
+```
+
+This runs, in order:
+
+1. `next build` — compiles the app to `.next/standalone` (a self-contained
+   Node server, no `next start`/CLI needed to run it).
+2. `scripts/prepare-desktop-build.mjs` — copies `public/`, `.next/static`,
+   and the generated Prisma client (incl. the native query-engine binary)
+   into the standalone bundle, and strips any `.env*` files `next build`
+   copied in (so a local dev secret never ships inside the installer).
+3. `scripts/build-template-db.mjs` — builds `prisma/template.db`: schema
+   migrated, sources/categories seeded, **zero articles**. This is what
+   `desktop/main.js` copies into the user's app-data folder on first launch.
+4. `electron-builder --win` — packages everything into
+   `dist-desktop/Nebula News Setup <version>.exe` (NSIS installer). The
+   `afterPack` hook (`scripts/after-pack.cjs`) copies the standalone
+   server's `node_modules` into the packaged app directly, bypassing
+   electron-builder's own file filter, which otherwise silently drops
+   nested `node_modules` folders inside `extraResources`.
+
+To run the unpacked app without building an installer (faster iteration):
+
+```bash
+npm run build
+node scripts/prepare-desktop-build.mjs
+npm run build:template-db
+npm run electron:dev
+```
+
+### How the desktop app works
+
+- **No install-time server.** `desktop/main.js` spawns
+  `.next/standalone/server.js` as a plain Node child process (via
+  Electron's own binary in `ELECTRON_RUN_AS_NODE` mode — no separate Node
+  runtime is bundled) on a free local port bound to `127.0.0.1`, waits for
+  it to respond, then opens a `BrowserWindow` on it.
+- **First launch** copies the bundled `template.db` into
+  `app.getPath('userData')` (e.g. `%APPDATA%\Nebula News\nebula-news.db`).
+  Later launches reuse that file as-is, so ingested articles persist across
+  app restarts/updates.
+- **Ingestion scheduling**: since there's no cron infrastructure inside a
+  desktop app, `main.js` itself calls `GET /api/ingest` on the local server
+  5 seconds after startup and then every 3 hours for as long as the app is
+  open. This hits the same endpoint Vercel Cron hits for the hosted-web
+  deployment — the server code doesn't know or care which one triggered it.
+- **No secrets shipped.** The server only ever binds to `127.0.0.1`, so
+  `/api/ingest` is called unauthenticated by design (see
+  `app/api/ingest/route.ts` — no `INGEST_SECRET` means open access); the
+  build strips `.env*` from the packaged bundle so nothing from your local
+  dev environment leaks into the installer regardless.
 
 ## How ingestion works
 
@@ -129,15 +193,11 @@ Open http://localhost:3000.
 7. Stores the article and logs the run in `IngestionLog`.
 8. Re-picks the top ~16 stories from the last 24h as `isBriefingPick`.
 
-### Scheduling
-
-[`vercel.json`](vercel.json) defines a Vercel Cron job hitting
-`/api/ingest` every 3 hours. In your Vercel project, set a `CRON_SECRET`
-env var equal to your `INGEST_SECRET` — Vercel signs cron requests with
-`Authorization: Bearer $CRON_SECRET` automatically. Outside Vercel, call
-`POST /api/ingest?secret=...` (or the `Authorization: Bearer` header) from
-any scheduler (cron, GitHub Actions, etc.), or just run `npm run ingest`
-manually/via a process manager.
+Feed availability is normal to fluctuate — outlets change RSS paths, and
+some (looking at you, RTS and AP) rate-limit or geo/anti-bot-restrict
+requests unpredictably. Check `IngestionLog` (`npx prisma studio`) if a
+source stops producing articles, and swap its `feedUrl` in
+`lib/sources/config.ts` if it's genuinely gone.
 
 ### Adding a source
 
@@ -159,10 +219,12 @@ Then run `npm run seed` (idempotent upsert) and `npm run ingest`.
 
 ### Adding a category
 
-Add a value to the `CategoryKey` enum in `prisma/schema.prisma`, add
-FR/EN labels for it under `categories` in `lib/i18n/fr.json` /
-`lib/i18n/en.json`, add matching keywords in
-`lib/processing/classify.ts`, run `npx prisma migrate dev`, then `npm run seed`.
+`Region`/`Language`/`CategoryKey` are plain TypeScript union types in
+[`types/index.ts`](types/index.ts) (SQLite has no native enum type, unlike
+Postgres) — add the new key to `CATEGORY_KEYS` there, add FR/EN labels
+under `categories` in `lib/i18n/fr.json` / `lib/i18n/en.json`, and add
+matching keywords in `lib/processing/classify.ts`. No migration needed
+since the column is just `String`. Then `npm run seed`.
 
 ## Design system
 
@@ -203,17 +265,23 @@ reloads — this only changes the **interface** language. Article content
 stays in its original language; use the separate content-language filter
 in the filter bar to show only FR or only EN articles.
 
-## Deploying to Vercel
+## Running as a hosted web app instead
 
-1. Push this repo to GitHub and import it in Vercel.
-2. Set `DATABASE_URL`, `INGEST_SECRET`/`CRON_SECRET` (same value), and
-   optionally `ANTHROPIC_API_KEY` as environment variables.
-3. Run `npx prisma migrate deploy` against the production database (e.g.
-   via a one-off Vercel deployment build command, or locally pointed at
-   the prod `DATABASE_URL`), then `npm run seed` once.
-4. Deploy. The cron in `vercel.json` starts refreshing articles on its own
-   schedule; trigger `npm run ingest` once manually right after the first
-   deploy so the site isn't empty while waiting for the first cron tick.
+The desktop build is the primary target, but nothing here is
+desktop-specific at the application level — swapping back to a hosted
+Postgres deployment is:
+
+1. In `prisma/schema.prisma`, change `datasource db { provider = ... }`
+   from `"sqlite"` to `"postgresql"`.
+2. Point `DATABASE_URL` at a real Postgres instance (Neon/Supabase/Railway/
+   etc) and run `npx prisma migrate dev --name init` against it.
+3. Deploy to Vercel; [`vercel.json`](vercel.json) already defines a Cron job
+   hitting `/api/ingest` every 3 hours. Set `INGEST_SECRET` and a matching
+   `CRON_SECRET` env var in your Vercel project — Vercel signs cron requests
+   with `Authorization: Bearer $CRON_SECRET` automatically.
+4. Run `npm run seed` once against production, then trigger
+   `POST /api/ingest?secret=...` once manually so the site isn't empty
+   while waiting for the first cron tick.
 
 ## Adding authentication
 

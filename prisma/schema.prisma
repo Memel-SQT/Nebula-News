@@ -11,38 +11,23 @@
 // - Category is still a join table (ArticleCategory) rather than a plain
 //   enum column on Article, because one article commonly carries more than
 //   one topic tag (e.g. an article can be both Economy and Tech).
+// - Datasource is SQLite: the shipped desktop build is zero-config (a local
+//   file under the OS app-data folder, like the original Nebula app's
+//   %LOCALAPPDATA%\Nebula\nebula.db), no Postgres server to run or host.
+//   SQLite has no native enum support at all (unlike Postgres), so
+//   Region/Language/CategoryKey are plain strings here, validated by the
+//   TypeScript union types in types/index.ts instead of a DB-level enum.
+//   Swapping back to `postgresql` for a hosted web deployment is a
+//   one-line provider change (see README); reintroducing real `enum`
+//   blocks there is optional at that point.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
-}
-
-enum Region {
-  FRANCE
-  NORTH_AMERICA
-  ANGLOSAXON
-  GLOBAL
-}
-
-enum Language {
-  FR
-  EN
-}
-
-enum CategoryKey {
-  WORLD
-  POLITICS
-  ECONOMY
-  TECH
-  SCIENCE
-  CULTURE
-  ENVIRONMENT
-  SPORTS
-  HEALTH
 }
 
 model Source {
@@ -50,8 +35,8 @@ model Source {
   name       String
   feedUrl    String         @unique
   websiteUrl String
-  region     Region
-  language   Language
+  region     String
+  language   String
   // Editorial weight used by the importance-scoring step: wire services and
   // flagship outlets are seeded higher than smaller/independent sources.
   weight     Float          @default(1.0)
@@ -68,8 +53,8 @@ model Article {
   originalUrl     String            @unique
   sourceId        String
   source          Source            @relation(fields: [sourceId], references: [id])
-  region          Region
-  language        Language
+  region          String
+  language        String
   publishedAt     DateTime
   rawContent      String?
   summary         String?
@@ -89,7 +74,7 @@ model Article {
 
 model Category {
   id       String            @id @default(cuid())
-  key      CategoryKey       @unique
+  key      String            @unique
   articles ArticleCategory[]
 }
 

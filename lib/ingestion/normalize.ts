@@ -1,4 +1,4 @@
-import type { Language, Region } from "@prisma/client";
+import type { Language, Region } from "@/types";
 import type { SourceConfig } from "@/lib/sources/config";
 import type { FeedItem } from "./fetchFeeds";
 

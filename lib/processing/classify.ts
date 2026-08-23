@@ -1,4 +1,4 @@
-import type { CategoryKey } from "@prisma/client";
+import type { CategoryKey } from "@/types";
 
 // Keyword-based topic classifier. Deliberately simple and dependency-free so
 // ingestion works with zero API keys; keywords cover both FR and EN since a

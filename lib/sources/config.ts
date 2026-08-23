@@ -1,4 +1,4 @@
-import type { Language, Region } from "@prisma/client";
+import type { Language, Region } from "@/types";
 
 export type SourceConfig = {
   name: string;
@@ -58,12 +58,15 @@ export const SOURCES: SourceConfig[] = [
 
   // --- North America ---------------------------------------------------
   {
-    name: "Reuters — World News",
-    feedUrl: "https://feeds.reuters.com/Reuters/worldNews",
-    websiteUrl: "https://www.reuters.com",
+    // Reuters discontinued its public RSS feeds; PBS NewsHour is a
+    // comparably neutral, wire-service-adjacent US source that still
+    // publishes one.
+    name: "PBS NewsHour",
+    feedUrl: "https://www.pbs.org/newshour/feeds/rss/headlines",
+    websiteUrl: "https://www.pbs.org/newshour",
     region: "NORTH_AMERICA",
     language: "EN",
-    weight: 1.4,
+    weight: 1.3,
   },
   {
     name: "Associated Press — Top News",

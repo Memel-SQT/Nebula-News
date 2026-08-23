@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { CategoryKey, Language, Region } from "@prisma/client";
+import type { CategoryKey, Language, Region } from "@/types";
 import { getArticles } from "@/lib/articles";
 
 export const dynamic = "force-dynamic";

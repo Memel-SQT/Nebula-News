@@ -1,6 +1,6 @@
 "use client";
 
-import type { CategoryKey } from "@prisma/client";
+import type { CategoryKey } from "@/types";
 import { useI18n } from "@/lib/i18n/client";
 import { Card } from "@/components/ui/Card";
 

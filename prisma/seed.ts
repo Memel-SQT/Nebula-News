@@ -1,11 +1,12 @@
-import { PrismaClient, CategoryKey } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { SOURCES } from "../lib/sources/config";
+import { CATEGORY_KEYS } from "../types";
 
 const db = new PrismaClient();
 
 async function main() {
-  console.log(`Seeding ${Object.keys(CategoryKey).length} categories...`);
-  for (const key of Object.values(CategoryKey)) {
+  console.log(`Seeding ${CATEGORY_KEYS.length} categories...`);
+  for (const key of CATEGORY_KEYS) {
     await db.category.upsert({
       where: { key },
       update: {},

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { CategoryKey, Language, Region } from "@prisma/client";
+import type { CategoryKey, Language, Region } from "@/types";
 import { getArticles } from "@/lib/articles";
 import { getDictionary, getLocale, translate } from "@/lib/i18n";
 import { PageShell } from "@/components/layout/PageShell";

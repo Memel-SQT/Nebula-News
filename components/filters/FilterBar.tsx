@@ -2,7 +2,7 @@
 
 import { useCallback, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import type { CategoryKey, Language, Region } from "@prisma/client";
+import type { CategoryKey, Language, Region } from "@/types";
 import { useI18n } from "@/lib/i18n/client";
 import { RegionFilter } from "./RegionFilter";
 import { CategoryChips } from "./CategoryChips";

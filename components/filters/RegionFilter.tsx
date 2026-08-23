@@ -1,6 +1,6 @@
 "use client";
 
-import type { Region } from "@prisma/client";
+import type { Region } from "@/types";
 import { useI18n } from "@/lib/i18n/client";
 
 const REGIONS: Region[] = ["FRANCE", "NORTH_AMERICA", "ANGLOSAXON", "GLOBAL"];
