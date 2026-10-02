@@ -11,7 +11,7 @@ export function getDictionary(locale: Locale): Dictionary {
   return dictionaries[locale];
 }
 
-export function getLocale(): Locale {
-  const cookie = cookies().get(LOCALE_COOKIE)?.value;
+export async function getLocale(): Promise<Locale> {
+  const cookie = (await cookies()).get(LOCALE_COOKIE)?.value;
   return cookie === "en" ? "en" : DEFAULT_LOCALE;
 }

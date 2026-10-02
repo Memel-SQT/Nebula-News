@@ -10,12 +10,11 @@ import { Button } from "@/components/ui/Button";
 
 export const revalidate = 300;
 
-export default async function HomePage({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | undefined };
+export default async function HomePage(props: {
+  searchParams: Promise<{ [key: string]: string | undefined }>;
 }) {
-  const locale = getLocale();
+  const searchParams = await props.searchParams;
+  const locale = await getLocale();
   const dict = getDictionary(locale);
   const t = (path: string, vars?: Record<string, string | number>) =>
     translate(dict, path, vars);

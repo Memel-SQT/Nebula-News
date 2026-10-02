@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n/client";
 import { LanguageToggle } from "@/components/filters/LanguageToggle";
 import { cn } from "@/lib/utils";
@@ -10,6 +11,10 @@ import { cn } from "@/lib/utils";
 export function Navbar() {
   const { t } = useI18n();
   const pathname = usePathname();
+  // "Nebula apps" only makes sense in the desktop app (it opens Nebula Hub through nebula://);
+  // checked after mount so the server-rendered page and the first client render agree.
+  const [desktop, setDesktop] = useState(false);
+  useEffect(() => setDesktop(navigator.userAgent.includes("Electron")), []);
 
   const links = [
     { href: "/", label: t("nav.home") },
@@ -48,7 +53,19 @@ export function Navbar() {
           ))}
         </nav>
 
-        <LanguageToggle />
+        <div className="flex items-center gap-2">
+          {desktop ? (
+            <a
+              href="nebula://hub/"
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-nebula-text-secondary transition-colors hover:text-nebula-text"
+            >
+              {t("nav.nebulaApps")}
+            </a>
+          ) : null}
+          <LanguageToggle />
+        </div>
       </div>
     </header>
   );

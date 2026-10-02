@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "appId": "nebula.news",
+  "provides": [
+    {
+      "id": "news.headlines.today",
+      "kind": "widget",
+      "sensitivity": "public",
+      "title": { "fr": "À la une", "en": "Top stories" },
+      "description": { "fr": "Les trois premiers sujets du briefing du jour, avec leur source.", "en": "The first three stories of today's briefing, with their source." },
+      "resultSchema": "WidgetV1",
+      "refreshSeconds": 900
+    },
+    {
+      "id": "news.open-briefing",
+      "kind": "intent",
+      "sensitivity": "public",
+      "title": { "fr": "Ouvrir le briefing", "en": "Open the briefing" },
+      "description": { "fr": "Ouvre le briefing du jour dans Nebula News.", "en": "Opens today's briefing in Nebula News." },
+      "payloadSchema": "EmptyV1",
+      "path": "/briefing"
+    }
+  ],
+  "consumes": [
+    { "id": "nebula.appearance.changed", "kind": "event" },
+    { "id": "nebula.hub.dock", "kind": "event" }
+  ],
+  "deepLinks": [
+    { "path": "/", "params": {} },
+    { "path": "/briefing", "params": {} }
+  ]
+}

@@ -6,20 +6,29 @@
 // for it to come up, then opens a BrowserWindow on it. Closing the window
 // kills the server. See scripts/prepare-desktop-build.mjs for how the
 // standalone bundle gets assembled, and README.md for the full build flow.
-const { app, BrowserWindow, shell } = require("electron");
+//
+// Nebula Hub (optional, desktop/nebula.js): the "Top stories" widget, the
+// "briefing ready" notification, the Nebula language, deep links and the Hub
+// mode. Without the Hub nothing changes.
+const { app, BrowserWindow, session, shell } = require("electron");
 const path = require("node:path");
 const fs = require("node:fs");
 const net = require("node:net");
 const http = require("node:http");
 const { spawn } = require("node:child_process");
+const { NebulaIntegration } = require("./nebula");
+const { externalTarget, isDockPayload } = require("./nebula-rules");
 
 const INGEST_INTERVAL_MS = 3 * 3600 * 1000;
+const LOCALE_COOKIE = "nebula-locale";
 
 app.setName("Nebula News");
 
 let serverProcess = null;
 let mainWindow = null;
 let ingestTimer = null;
+let baseUrl = null;
+let nebula = null;
 
 function getFreePort() {
   return new Promise((resolve, reject) => {
@@ -108,6 +117,30 @@ async function startServer() {
   return port;
 }
 
+/** GET a JSON route of the local server (the Hub's widget reads today's briefing this way). */
+function getJson(route) {
+  return new Promise((resolve, reject) => {
+    if (!baseUrl) return reject(new Error("server not ready"));
+    http
+      .get(`${baseUrl}${route}`, (res) => {
+        let body = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk) => {
+          body += chunk;
+          if (body.length > 2_000_000) res.destroy(new Error("too large"));
+        });
+        res.on("end", () => {
+          try {
+            resolve(JSON.parse(body));
+          } catch (error) {
+            reject(error);
+          }
+        });
+      })
+      .on("error", reject);
+  });
+}
+
 /** Hits the server's own /api/ingest (unauthenticated here since it only
  *  ever binds to 127.0.0.1) — same endpoint Vercel Cron hits for the
  *  hosted-web deployment, just triggered by a plain interval timer instead
@@ -116,6 +149,8 @@ function scheduleIngestion(port) {
   const tick = () => {
     http
       .get(`http://127.0.0.1:${port}/api/ingest`, (res) => {
+        // A new briefing: Nebula Hub's activity center hears about it (once a day).
+        res.on("end", () => void nebula?.briefingMaybeReady());
         res.resume();
         console.log(`[ingest] triggered, status ${res.statusCode}`);
       })
@@ -126,41 +161,186 @@ function scheduleIngestion(port) {
   ingestTimer = setInterval(tick, INGEST_INTERVAL_MS);
 }
 
-async function createWindow() {
-  const port = await startServer();
-  scheduleIngestion(port);
+/** Only http(s) pages leave for the browser; nebula:// links go to Nebula Hub; nothing else opens. */
+function openOutside(url) {
+  const target = externalTarget(url);
+  if (target === "browser") void shell.openExternal(url);
+  if (target === "nebula") {
+    // The protocol is registered by an installed Nebula Hub; without it, its download page.
+    void shell.openExternal(
+      app.getApplicationNameForProtocol("nebula://") ? url : "https://github.com/Memel-SQT/Nebula-Hub/releases",
+    );
+  }
+}
 
-  mainWindow = new BrowserWindow({
-    width: 1320,
-    height: 880,
-    minWidth: 980,
-    minHeight: 620,
+/** The Nebula Hub mode: frameless window placed by the Hub (see openWindow). */
+const dock = { docked: false, normalBounds: null, busy: Promise.resolve() };
+
+function openWindow(options = {}) {
+  const docked = options.docked === true;
+  const window = new BrowserWindow({
+    width: options.bounds?.width ?? 1320,
+    height: options.bounds?.height ?? 880,
+    ...(options.bounds ? { x: options.bounds.x, y: options.bounds.y } : {}),
+    minWidth: docked ? 320 : 980,
+    minHeight: docked ? 240 : 620,
+    // Docked in Nebula Hub: exactly the Hub's area, no frame, no invisible resize border, off the
+    // taskbar, and only the Hub moves or sizes it.
+    ...(docked
+      ? { frame: false, thickFrame: false, skipTaskbar: true, resizable: false, movable: false, minimizable: false, maximizable: false, fullscreenable: false }
+      : {}),
+    show: false,
     backgroundColor: "#0A0A0F",
     autoHideMenuBar: true,
     icon: path.join(__dirname, "icon.ico"),
     webPreferences: {
       contextIsolation: true,
+      nodeIntegration: false,
       sandbox: true,
     },
   });
+  window.once("ready-to-show", () => (docked ? window.showInactive() : window.show()));
 
   // Keep external links (original article URLs) in the user's real browser
   // instead of navigating the app window away from Nebula News.
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+  window.webContents.setWindowOpenHandler(({ url }) => {
+    openOutside(url);
     return { action: "deny" };
   });
+  // A plain link (no target) must not take the window away from the app either.
+  window.webContents.on("will-navigate", (event, url) => {
+    if (baseUrl && (url === baseUrl || url.startsWith(`${baseUrl}/`))) return;
+    event.preventDefault();
+    openOutside(url);
+  });
+  window.on("closed", () => {
+    if (mainWindow === window) mainWindow = null;
+  });
 
-  mainWindow.loadURL(`http://127.0.0.1:${port}`);
+  void window.loadURL(`${baseUrl}${options.route ?? "/"}`);
+  mainWindow = window;
+  return window;
 }
 
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit();
-});
+function focusWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    openWindow();
+    return;
+  }
+  if (dock.docked) {
+    // In the Hub mode the Hub decides where the window is; it only comes to the front.
+    mainWindow.moveTop();
+    return;
+  }
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+}
 
-app.on("before-quit", () => {
-  if (ingestTimer) clearInterval(ingestTimer);
-  if (serverProcess) serverProcess.kill();
-});
+/** Opens a route of the app (deep link, intent), keeping the window where it is. */
+function openRoute(route) {
+  focusWindow();
+  void mainWindow?.loadURL(`${baseUrl}${route}`);
+}
 
-app.whenReady().then(createWindow);
+/** Electron cannot remove the frame of an open window: it is recreated, the new one first. */
+function replaceWindow(options) {
+  const previous = mainWindow;
+  let route = "/";
+  try {
+    if (previous && !previous.isDestroyed()) route = new URL(previous.webContents.getURL()).pathname;
+  } catch {
+    route = "/";
+  }
+  openWindow({ ...options, route });
+  if (previous && !previous.isDestroyed()) previous.destroy();
+}
+
+function applyDock(payload) {
+  if (!isDockPayload(payload)) return dock.busy;
+  dock.busy = dock.busy
+    .then(() => {
+      if (payload.state === "released") return undock();
+      if (!dock.docked) {
+        dock.normalBounds = mainWindow && !mainWindow.isDestroyed() ? mainWindow.getBounds() : null;
+        dock.docked = true;
+        replaceWindow({ docked: true, bounds: payload.bounds });
+      }
+      const window = mainWindow;
+      if (!window || window.isDestroyed()) return undefined;
+      if (!payload.visible) return window.hide();
+      window.setBounds(payload.bounds);
+      if (!window.isVisible()) window.showInactive();
+      if (payload.raise) window.moveTop();
+      return undefined;
+    })
+    .catch(() => undefined);
+  return dock.busy;
+}
+
+function undock() {
+  if (!dock.docked) return;
+  dock.docked = false;
+  replaceWindow({ docked: false, bounds: dock.normalBounds ?? undefined });
+  focusWindow();
+}
+
+/** The Nebula language, written to the app's own locale cookie, then the page reloads. */
+async function applyLanguage(language) {
+  if (!baseUrl) return;
+  await session.defaultSession.cookies.set({
+    url: baseUrl,
+    name: LOCALE_COOKIE,
+    value: language,
+    expirationDate: Math.floor(Date.now() / 1000) + 31536000,
+    sameSite: "lax",
+  });
+  mainWindow?.webContents.reload();
+}
+
+async function createWindow() {
+  const port = await startServer();
+  baseUrl = `http://127.0.0.1:${port}`;
+  scheduleIngestion(port);
+
+  nebula = new NebulaIntegration({
+    appVersion: app.getVersion(),
+    // Packaged: copied to resources\ by electron-builder, where Nebula Hub reads it too.
+    manifestPath: app.isPackaged
+      ? path.join(process.resourcesPath, "nebula.app.json")
+      : path.join(__dirname, "..", "nebula.app.json"),
+    settingsPath: path.join(app.getPath("userData"), "nebula-hub.json"),
+    briefing: () => getJson("/api/briefing/today"),
+    language: () => (app.getLocale().startsWith("en") ? "en" : "fr"),
+    openRoute,
+    applyLanguage: (language) => void applyLanguage(language),
+    onDock: (payload) => void applyDock(payload),
+  });
+
+  // Started by a deep link (`--nebula-intent`): open that screen directly.
+  openWindow({ route: nebula.routeOfArgv(process.argv) ?? "/" });
+  await nebula.start().catch(() => undefined);
+}
+
+// One instance: a second launch (or a deep link) goes to the running one.
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on("second-instance", (_event, argv) => {
+    const route = nebula?.routeOfArgv(argv);
+    if (route) openRoute(route);
+    else focusWindow();
+  });
+
+  app.on("window-all-closed", () => {
+    if (process.platform !== "darwin") app.quit();
+  });
+
+  app.on("before-quit", () => {
+    nebula?.dispose();
+    if (ingestTimer) clearInterval(ingestTimer);
+    if (serverProcess) serverProcess.kill();
+  });
+
+  app.whenReady().then(createWindow);
+}

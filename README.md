@@ -14,7 +14,7 @@ its `theme.css` into Tailwind tokens (see [Design system](#design-system)).
 
 ## Tech stack
 
-- **Next.js 14** (App Router, React Server Components) + **TypeScript**
+- **Next.js 15** (App Router, React Server Components) + **TypeScript**
 - **Tailwind CSS**, hand-rolled component primitives in `components/ui`
   (no external UI kit — kept the dependency surface small and the tokens
   identical to the Nebula desktop app's theme)
@@ -136,7 +136,10 @@ This runs, in order:
    migrated, sources/categories seeded, **zero articles**. This is what
    `desktop/main.js` copies into the user's app-data folder on first launch.
 4. `electron-builder --win` — packages everything into
-   `dist-desktop/Nebula News Setup <version>.exe` (NSIS installer). The
+   `dist-desktop/Nebula-News-Setup-<version>.exe` (NSIS installer) with its
+   `latest.yml` (size and SHA-512), which Nebula Hub checks before it runs
+   anything — publish both on a GitHub release of this repository to make the
+   app installable from the Hub. The
    `afterPack` hook (`scripts/after-pack.cjs`) copies the standalone
    server's `node_modules` into the packaged app directly, bypassing
    electron-builder's own file filter, which otherwise silently drops
@@ -172,6 +175,32 @@ npm run electron:dev
   `app/api/ingest/route.ts` — no `INGEST_SECRET` means open access); the
   build strips `.env*` from the packaged bundle so nothing from your local
   dev environment leaks into the installer regardless.
+
+### Nebula Hub (optional)
+
+When [Nebula Hub](https://github.com/Memel-SQT/Nebula-Hub) is installed, the
+desktop app connects to it through Nebula Link (`desktop/nebula.js`, SDK
+`@nebula/link`, manifest `nebula.app.json` shipped in `resources\`), a local
+named pipe — never a network call. It only shares public data:
+
+- the **"Top stories" widget** on the Hub's Home: the first three stories of
+  today's briefing with their source;
+- **"Your briefing is ready"** in the Hub's activity centre, once a day;
+- deep links and the intent `news.open-briefing` (`nebula://news/briefing`),
+  which Nebula Clock's long breaks can offer;
+- the **Nebula language**, applied only when it changes in the Hub, so the
+  app's own language toggle keeps working;
+- the **Hub mode**: the window can open inside the Hub's window (frameless,
+  placed by the Hub), and comes back to normal when released or when the Hub
+  goes away.
+
+A "Nebula apps" link in the navigation (desktop only) opens the Hub, or its
+download page when it is not installed. Without the Hub nothing changes. The
+pure rules are tested with `npm test` (`node --test`).
+
+Also in the desktop shell: one instance at a time (a second launch or a deep
+link goes to the running one), and the window never navigates away from the
+app (links open in the browser, http(s) only; nothing else opens).
 
 ## How ingestion works
 

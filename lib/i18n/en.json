@@ -6,7 +6,8 @@
   "nav": {
     "home": "Home",
     "briefing": "Today's Briefing",
-    "favorites": "Favorites"
+    "favorites": "Favorites",
+    "nebulaApps": "Nebula apps"
   },
   "regions": {
     "FRANCE": "France & French-speaking Europe",

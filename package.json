@@ -18,12 +18,14 @@
     "ingest": "tsx scripts/run-ingestion.ts",
     "electron:dev": "electron .",
     "build:template-db": "node scripts/build-template-db.mjs",
-    "build:desktop": "npm run build && node scripts/prepare-desktop-build.mjs && npm run build:template-db && electron-builder --win"
+    "build:desktop": "npm run build && node scripts/prepare-desktop-build.mjs && npm run build:template-db && electron-builder --win",
+    "test": "node --test desktop/nebula-rules.test.js"
   },
   "dependencies": {
+    "@nebula/link": "https://github.com/Memel-SQT/Nebula-Hub/releases/download/link-v1.0.0/nebula-link-1.0.0.tgz",
     "@prisma/client": "^5.20.0",
     "clsx": "^2.1.1",
-    "next": "^14.2.15",
+    "next": "^15.5.27",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "rss-parser": "^3.13.0",
@@ -34,9 +36,9 @@
     "@types/react": "^18.3.10",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.20",
-    "electron": "^43.4.1",
+    "electron": "^44.5.1",
     "electron-builder": "^26.15.3",
-    "postcss": "^8.4.47",
+    "postcss": "^8.5.28",
     "prisma": "^5.20.0",
     "tailwindcss": "^3.4.13",
     "tsx": "^4.19.1",
@@ -52,17 +54,38 @@
     "directories": {
       "output": "dist-desktop"
     },
-    "files": ["desktop/**/*", "package.json"],
-    "extraResources": [{ "from": "prisma/template.db", "to": "template.db" }],
+    "files": [
+      "desktop/**/*",
+      "!desktop/**/*.test.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "prisma/template.db",
+        "to": "template.db"
+      },
+      {
+        "from": "nebula.app.json",
+        "to": "nebula.app.json"
+      }
+    ],
     "afterPack": "./scripts/after-pack.cjs",
     "win": {
-      "target": ["nsis"],
+      "target": [
+        "nsis"
+      ],
       "icon": "desktop/icon.ico"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true
+    },
+    "artifactName": "Nebula-News-Setup-${version}.${ext}",
+    "publish": {
+      "provider": "github",
+      "owner": "Memel-SQT",
+      "repo": "Nebula-News"
     }
   },
   "allowScripts": {
@@ -70,6 +93,10 @@
     "@prisma/engines@5.22.0": true,
     "esbuild@0.28.2": true,
     "prisma@5.22.0": true,
-    "electron-winstaller@5.4.0": true
+    "electron-winstaller@5.4.0": true,
+    "electron@44.5.1": true
+  },
+  "overrides": {
+    "postcss": "$postcss"
   }
 }

@@ -8,7 +8,7 @@ import { ArticleGrid } from "@/components/news/ArticleGrid";
 export const revalidate = 300;
 
 export default async function BriefingPage() {
-  const locale = getLocale();
+  const locale = await getLocale();
   const dict = getDictionary(locale);
   const t = (path: string, vars?: Record<string, string | number>) =>
     translate(dict, path, vars);

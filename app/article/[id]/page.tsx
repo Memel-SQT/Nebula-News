@@ -8,12 +8,11 @@ import { Button } from "@/components/ui/Button";
 
 export const revalidate = 300;
 
-export default async function ArticlePage({
-  params,
-}: {
-  params: { id: string };
+export default async function ArticlePage(props: {
+  params: Promise<{ id: string }>;
 }) {
-  const locale = getLocale();
+  const params = await props.params;
+  const locale = await getLocale();
   const dict = getDictionary(locale);
   const t = (path: string, vars?: Record<string, string | number>) =>
     translate(dict, path, vars);
