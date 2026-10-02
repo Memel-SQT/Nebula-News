@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { ArticleCard } from "@/types";
 import { useI18n } from "@/lib/i18n/client";
 import { Card } from "@/components/ui/Card";
-import { CategoryTag, RegionTag } from "@/components/news/Tag";
+import { ThemeTag } from "@/components/news/Tag";
 import { timeAgo } from "@/lib/utils";
 
 export function NewsCard({ article }: { article: ArticleCard }) {
@@ -30,9 +30,8 @@ export function NewsCard({ article }: { article: ArticleCard }) {
 
         <div className="flex flex-1 flex-col gap-3 p-5">
           <div className="flex flex-wrap items-center gap-1.5">
-            <RegionTag region={article.region} />
-            {article.categories.slice(0, 2).map((c) => (
-              <CategoryTag key={c} category={c} />
+            {article.themes.map((theme) => (
+              <ThemeTag key={theme} theme={theme} />
             ))}
           </div>
 

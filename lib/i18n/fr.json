@@ -1,68 +1,68 @@
 {
   "app": {
     "name": "Nebula News",
-    "tagline": "Votre briefing quotidien sur le monde"
+    "tagline": "Développement personnel, finance et tech, chaque jour"
   },
   "nav": {
     "home": "Accueil",
     "briefing": "Briefing du jour",
-    "favorites": "Favoris",
+    "themes": "Thèmes",
     "nebulaApps": "Apps Nebula"
   },
-  "regions": {
-    "FRANCE": "France & Europe francophone",
-    "NORTH_AMERICA": "Amérique du Nord",
-    "ANGLOSAXON": "Monde anglo-saxon",
-    "GLOBAL": "International"
-  },
-  "categories": {
-    "WORLD": "Monde",
-    "POLITICS": "Politique",
-    "ECONOMY": "Économie",
-    "TECH": "Technologie",
-    "SCIENCE": "Science",
-    "CULTURE": "Culture",
-    "ENVIRONMENT": "Environnement",
-    "SPORTS": "Sport",
-    "HEALTH": "Santé"
+  "themes": {
+    "FOCUS": {
+      "label": "Développement personnel",
+      "description": "Organisation, habitudes, concentration et équilibre de vie.",
+      "app": "Pour Nebula Clock"
+    },
+    "FINANCE": {
+      "label": "Finance",
+      "description": "Budget, épargne, investissement et éducation financière.",
+      "app": "Pour Nebula Finterest"
+    },
+    "TECH": {
+      "label": "Tech & informatique",
+      "description": "Informatique, logiciels, IA, cybersécurité et matériel.",
+      "app": "Pour Nebula Hub"
+    }
   },
   "languages": {
     "FR": "Français",
     "EN": "Anglais"
   },
   "filters": {
-    "allRegions": "Toutes les régions",
-    "allCategories": "Tous les sujets",
     "allLanguages": "Toutes les langues",
-    "search": "Rechercher une actualité...",
-    "today": "Aujourd'hui",
+    "search": "Rechercher un article...",
+    "searchLabel": "Rechercher",
+    "languageLabel": "Langue des articles",
     "clear": "Réinitialiser"
   },
   "home": {
-    "title": "Le monde, en un coup d'œil",
-    "subtitle": "Une sélection d'actualités neutres, venues de France, d'Amérique du Nord et du monde anglo-saxon.",
+    "title": "Vos trois thèmes, en un coup d'œil",
+    "subtitle": "Développement personnel, finance et tech : une sélection de sources de référence, en français et en anglais.",
     "empty": "Aucun article ne correspond à ces filtres pour le moment.",
     "loadMore": "Voir plus d'articles",
+    "previous": "Page précédente",
     "briefingCta": "Voir le briefing du jour",
-    "sourceCount": "{count} sources suivies"
+    "total": "{count} articles au total"
+  },
+  "theme": {
+    "seeAll": "Tout le thème",
+    "empty": "Pas encore d'article dans ce thème. La prochaine collecte arrive bientôt."
   },
   "briefing": {
     "title": "Briefing du jour",
-    "subtitle": "L'essentiel de l'actualité mondiale, résumé en {count} histoires clés.",
-    "themesTitle": "Les grands thèmes du jour",
-    "whyItMatters": "Pourquoi c'est important",
+    "subtitle": "L'essentiel de vos trois thèmes, en {count} articles.",
     "empty": "Le briefing du jour est en cours de préparation. Revenez dans quelques minutes."
   },
   "article": {
     "readOriginal": "Lire l'article original",
     "source": "Source",
     "publishedOn": "Publié le",
-    "relatedTopics": "Sujets liés",
     "backToHome": "Retour à l'accueil"
   },
   "common": {
     "loading": "Chargement...",
-    "error": "Une erreur est survenue.",
-    "minutesAgo": "il y a {n} min"
+    "error": "Une erreur est survenue."
   }
 }

@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { isThemeKey, type Language } from "@/types";
+import { notFound } from "next/navigation";
+import { themeOfSlug, type Language } from "@/types";
 import { getArticles } from "@/lib/articles";
 import { getDictionary, getLocale, translate } from "@/lib/i18n";
 import { PageShell } from "@/components/layout/PageShell";
@@ -7,23 +7,26 @@ import { SectionHeader } from "@/components/layout/SectionHeader";
 import { FilterBar } from "@/components/filters/FilterBar";
 import { ArticleGrid } from "@/components/news/ArticleGrid";
 import { Pagination } from "@/components/news/Pagination";
-import { Button } from "@/components/ui/Button";
 
 export const revalidate = 300;
 
-export default async function HomePage(props: {
+/** One theme: `/theme/focus`, `/theme/finance`, `/theme/tech` (also Nebula Link deep links). */
+export default async function ThemePage(props: {
+  params: Promise<{ theme: string }>;
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) {
-  const searchParams = await props.searchParams;
+  const [{ theme: slug }, searchParams] = await Promise.all([props.params, props.searchParams]);
+  const theme = themeOfSlug(slug);
+  if (!theme) notFound();
+
   const locale = await getLocale();
   const dict = getDictionary(locale);
   const t = (path: string, vars?: Record<string, string | number>) =>
     translate(dict, path, vars);
 
   const page = Math.max(1, Number(searchParams.page) || 1);
-
   const { items, hasMore, total } = await getArticles({
-    theme: isThemeKey(searchParams.theme) ? searchParams.theme : undefined,
+    theme,
     language: (searchParams.language as Language) || undefined,
     q: searchParams.q || undefined,
     page,
@@ -32,21 +35,16 @@ export default async function HomePage(props: {
   return (
     <PageShell>
       <SectionHeader
-        title={t("home.title")}
-        subtitle={t("home.subtitle")}
-        action={
-          <Link href="/briefing">
-            <Button variant="primary">{t("home.briefingCta")}</Button>
-          </Link>
-        }
+        title={t(`themes.${theme}.label`)}
+        subtitle={t(`themes.${theme}.description`)}
       />
 
-      <FilterBar />
+      <FilterBar showThemes={false} />
 
       <ArticleGrid articles={items} />
 
       <Pagination
-        basePath="/"
+        basePath={`/theme/${slug}`}
         searchParams={searchParams}
         page={page}
         hasMore={hasMore}

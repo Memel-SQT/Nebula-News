@@ -1,7 +1,18 @@
 # Nebula News
 
-A daily world news briefing, aggregated from neutral, reputable French and
-English sources and presented in a premium, dark, cosmic interface.
+A daily briefing on three themes, one per app of the Nebula family, aggregated
+from reference French and English sources and presented in a premium, dark,
+cosmic interface:
+
+| Theme | For | Sources (examples) |
+|---|---|---|
+| **Personal growth** — organization, habits, focus, life balance | Nebula Clock | Cal Newport, Farnam Street, Ness Labs, Psyche, Cerveau & Psycho, Habitudes Zen |
+| **Finance** — budgeting, saving, investing, financial literacy | Nebula Finterest | La finance pour tous, Finance Héros, Le Revenu, NerdWallet, Kiplinger |
+| **Tech & computing** — software, AI, security, hardware | Nebula Hub | Next, Numerama, Le Monde Informatique, Ars Technica, MIT Technology Review |
+
+General world news is gone since 0.4.0: articles from the former sources stay
+in the local database but are no longer shown (see
+[How ingestion works](#how-ingestion-works)).
 
 Ships as a **Windows desktop app** — zero setup, no server to run or
 database to host, just an installer. The same code also works as a
@@ -37,7 +48,8 @@ of scope for a first pass. See [Adding authentication](#adding-authentication).
 app/
   layout.tsx              root layout: locale, I18nProvider, Navbar, bg glow
   page.tsx                home dashboard (filters + article grid)
-  briefing/page.tsx        daily briefing (themes + top stories)
+  briefing/page.tsx        daily briefing (one section per theme)
+  theme/[theme]/page.tsx   one theme: /theme/focus, /theme/finance, /theme/tech
   article/[id]/page.tsx    article detail view
   api/
     articles/route.ts       GET  filtered article list
@@ -47,8 +59,8 @@ app/
 components/
   ui/          Badge, Button, Card — shared primitives
   layout/      Navbar, PageShell, SectionHeader, BgGlow
-  filters/     LanguageToggle, RegionFilter, CategoryChips, FilterBar
-  news/        NewsCard, Tag, ArticleGrid, ThemesPanel
+  filters/     LanguageToggle, ThemeChips, FilterBar
+  news/        NewsCard, Tag, ArticleGrid, Pagination
 lib/
   db.ts                    Prisma client singleton
   articles.ts              data access layer (list/search/briefing queries)
@@ -56,13 +68,14 @@ lib/
   i18n/                    fr.json, en.json, dictionary + locale helpers
   sources/config.ts        the configurable source list
   ingestion/               fetchFeeds, normalize, run (orchestrator)
-  processing/               classify (topics), score (importance), summarize
+  processing/               score (importance), summarize
+  themes.ts                the three themes: briefing picks, ordering (tested)
 desktop/
   main.js                  Electron main process (spawns the server, opens the window)
   icon.ico                 app/installer icon
 prisma/
   schema.prisma
-  seed.ts                  seeds categories + sources from lib/sources/config.ts
+  seed.ts                  seeds the three themes + sources from lib/sources/config.ts
 scripts/
   run-ingestion.ts         `npm run ingest` entrypoint
   prepare-desktop-build.mjs builds the standalone server bundle for packaging
@@ -97,7 +110,7 @@ npx prisma migrate dev --name init
 npm run seed
 ```
 
-`npm run seed` seeds the category list and the sources from
+`npm run seed` seeds the three themes and the sources from
 [`lib/sources/config.ts`](lib/sources/config.ts) into the `Source` table.
 
 ### 4. Fetch the first batch of articles
@@ -106,7 +119,7 @@ npm run seed
 npm run ingest
 ```
 
-This runs the full ingestion pipeline once (fetch → normalize → classify →
+This runs the full ingestion pipeline once (fetch → normalize → theme →
 summarize → score → store) and marks the day's top stories for the
 briefing. It's idempotent — run it as often as you like.
 
@@ -183,8 +196,13 @@ desktop app connects to it through Nebula Link (`desktop/nebula.js`, SDK
 `@nebula/link`, manifest `nebula.app.json` shipped in `resources\`), a local
 named pipe — never a network call. It only shares public data:
 
-- the **"Top stories" widget** on the Hub's Home: the first three stories of
-  today's briefing with their source;
+- the **"Top stories" widget** (`news.headlines.today`): the first three
+  stories of today's briefing, one per theme, with their source;
+- **one widget per theme**, for the app of that theme: `news.focus.today`
+  (Nebula Clock), `news.finance.today` (Nebula Finterest) and
+  `news.tech.today` (the Hub's Home). Each opens its theme
+  (`nebula://news/theme/focus|finance|tech`); an app reads its widget with
+  `link.query(...)` after declaring it in its own `consumes`;
 - **"Your briefing is ready"** in the Hub's activity centre, once a day;
 - deep links and the intent `news.open-briefing` (`nebula://news/briefing`),
   which Nebula Clock's long breaks can offer;
@@ -212,19 +230,28 @@ app (links open in the browser, http(s) only; nothing else opens).
 2. Normalizes each item into a common shape — title, URL, source, region,
    language, published date, plain-text content (`lib/ingestion/normalize.ts`).
 3. Skips items whose `originalUrl` already exists (dedup).
-4. Classifies topics with a FR/EN keyword matcher
-   (`lib/processing/classify.ts`) — always returns at least `WORLD`.
+4. Tags the article with its source's theme (`FOCUS`, `FINANCE` or `TECH`):
+   one feed, one theme, which is far more reliable than guessing from
+   keywords.
 5. Summarizes to 2-3 sentences: Claude API if `ANTHROPIC_API_KEY` is set,
    otherwise an extractive summary of the first sentences
    (`lib/processing/summarize.ts`).
-6. Scores importance from source weight × recency decay × topic boost
+6. Scores importance from source weight × recency decay
    (`lib/processing/score.ts`).
 7. Stores the article and logs the run in `IngestionLog`.
-8. Re-picks the top ~16 stories from the last 24h as `isBriefingPick`.
+8. Re-picks the briefing (`lib/themes.ts`): the five best articles of each
+   theme over the last week (personal-growth and finance blogs publish
+   weekly), at most two per source, scored again at pick time.
+
+**Upgrading an installed database** (no schema change): each run adds the
+three theme rows to `Category` if missing, and marks every source that is no
+longer in `lib/sources/config.ts` inactive. The app only shows articles of
+active sources in one of the three themes, so the articles of the former
+general-news sources stay on disk, hidden, and nothing is deleted.
 
 Feed availability is normal to fluctuate — outlets change RSS paths, and
-some (looking at you, RTS and AP) rate-limit or geo/anti-bot-restrict
-requests unpredictably. Check `IngestionLog` (`npx prisma studio`) if a
+some rate-limit or block bots unpredictably (Les Échos, Capital,
+Investopedia and Morningstar were left out for that reason). Check `IngestionLog` (`npx prisma studio`) if a
 source stops producing articles, and swap its `feedUrl` in
 `lib/sources/config.ts` if it's genuinely gone.
 
@@ -240,20 +267,22 @@ Add an entry to the `SOURCES` array in
   websiteUrl: "https://example.com",
   region: "FRANCE" | "NORTH_AMERICA" | "ANGLOSAXON" | "GLOBAL",
   language: "FR" | "EN",
+  theme: "FOCUS" | "FINANCE" | "TECH",
   weight: 1.0, // editorial trust weight used in importance scoring
 }
 ```
 
-Then run `npm run seed` (idempotent upsert) and `npm run ingest`.
+Then run `npm run seed` (idempotent upsert) and `npm run ingest`. Removing an
+entry retires the source (inactive, articles hidden), it does not delete it.
 
-### Adding a category
+### The themes
 
-`Region`/`Language`/`CategoryKey` are plain TypeScript union types in
-[`types/index.ts`](types/index.ts) (SQLite has no native enum type, unlike
-Postgres) — add the new key to `CATEGORY_KEYS` there, add FR/EN labels
-under `categories` in `lib/i18n/fr.json` / `lib/i18n/en.json`, and add
-matching keywords in `lib/processing/classify.ts`. No migration needed
-since the column is just `String`. Then `npm run seed`.
+`ThemeKey` is a plain TypeScript union in [`types/index.ts`](types/index.ts)
+(`THEME_KEYS`, with their URL slugs in `THEME_SLUGS`), stored as `Category`
+rows by key, so no migration is needed. Their FR/EN labels are under
+`themes` in `lib/i18n/fr.json` / `lib/i18n/en.json`; the Nebula Link side
+(widget ids, deep links) is `THEMES` in `desktop/nebula-rules.js` and
+`nebula.app.json`, kept in step by the tests.
 
 ## Design system
 

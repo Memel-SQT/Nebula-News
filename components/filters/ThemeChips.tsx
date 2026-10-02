@@ -1,36 +1,34 @@
 "use client";
 
-import type { CategoryKey } from "@/types";
+import { THEME_KEYS, type ThemeKey } from "@/types";
 import { useI18n } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 
-const CATEGORIES: CategoryKey[] = [
-  "WORLD", "POLITICS", "ECONOMY", "TECH", "SCIENCE", "CULTURE", "ENVIRONMENT", "SPORTS", "HEALTH",
-];
-
-export function CategoryChips({
+export function ThemeChips({
   value,
   onChange,
 }: {
-  value: CategoryKey | null;
-  onChange: (category: CategoryKey | null) => void;
+  value: ThemeKey | null;
+  onChange: (theme: ThemeKey | null) => void;
 }) {
   const { t } = useI18n();
 
   return (
     <div className="flex flex-wrap gap-2">
-      {CATEGORIES.map((c) => (
+      {THEME_KEYS.map((theme) => (
         <button
-          key={c}
-          onClick={() => onChange(value === c ? null : c)}
+          key={theme}
+          type="button"
+          aria-pressed={value === theme}
+          onClick={() => onChange(value === theme ? null : theme)}
           className={cn(
             "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-            value === c
+            value === theme
               ? "border-transparent bg-nebula-gradient text-white"
               : "border-nebula-border bg-nebula-card-alt text-nebula-text-secondary hover:text-nebula-text"
           )}
         >
-          {t(`categories.${c}`)}
+          {t(`themes.${theme}.label`)}
         </button>
       ))}
     </div>

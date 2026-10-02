@@ -1,16 +1,21 @@
 // Nebula Hub integration through Nebula Link (optional). Without the Hub the SDK stays offline
 // without error and Nebula News works exactly as before.
 //
-// Shared (public only): the first three stories of today's briefing for the Hub's Home widget,
+// Shared (public only): the first three stories of today's briefing (one per theme), one widget
+// per theme (personal growth for Nebula Clock, finance for Nebula Finterest, tech for the Hub),
 // and "your briefing is ready" once a day. Received: the Nebula language (applied only when it
 // changes, so the app's own toggle keeps working), the Hub mode placement, and deep links /
 // intents (open the app, open the briefing — Nebula Clock's long breaks can offer it).
 const fs = require("node:fs");
 const path = require("node:path");
 const { NebulaLink } = require("@nebula/link");
-const { headlinesWidget, briefingReadyNotification, languageToApply } = require("./nebula-rules");
+const { THEMES, headlinesWidget, themeWidget, briefingReadyNotification, languageToApply } = require("./nebula-rules");
 
-const ROUTES = { "/": "/", "/briefing": "/briefing" };
+const ROUTES = {
+  "/": "/",
+  "/briefing": "/briefing",
+  ...Object.fromEntries(THEMES.map((theme) => [`/theme/${theme.slug}`, `/theme/${theme.slug}`])),
+};
 
 class NebulaIntegration {
   constructor(deps) {
@@ -50,6 +55,13 @@ class NebulaIntegration {
       const briefing = await this.deps.briefing().catch(() => null);
       return briefing ? headlinesWidget(briefing, this.language(), new Date()) : null;
     });
+    // One widget per theme, for the app of that theme (Clock, Finterest) or the Hub's Home (tech).
+    for (const theme of THEMES) {
+      this.link.provide(theme.widget, async () => {
+        const briefing = await this.deps.briefing().catch(() => null);
+        return briefing ? themeWidget(briefing, theme.key, this.language(), new Date()) : null;
+      });
+    }
     await this.link.connect();
   }
 

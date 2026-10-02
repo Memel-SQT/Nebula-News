@@ -45,15 +45,12 @@ export default async function ArticlePage(props: {
         )}
 
         <div className="flex flex-wrap gap-1.5 p-6 pb-0">
-          <span className="rounded-full border border-nebula-border px-2.5 py-1 text-xs text-nebula-text-secondary">
-            {t(`regions.${article.region}`)}
-          </span>
-          {article.categories.map((c) => (
+          {article.themes.map((theme) => (
             <span
-              key={c}
+              key={theme}
               className="rounded-full bg-nebula-card-alt px-2.5 py-1 text-xs text-nebula-text-secondary"
             >
-              {t(`categories.${c}`)}
+              {t(`themes.${theme}.label`)}
             </span>
           ))}
         </div>

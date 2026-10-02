@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n/client";
 import { LanguageToggle } from "@/components/filters/LanguageToggle";
 import { cn } from "@/lib/utils";
+import { THEME_KEYS, THEME_SLUGS } from "@/types";
 
 export function Navbar() {
   const { t } = useI18n();
@@ -19,6 +20,10 @@ export function Navbar() {
   const links = [
     { href: "/", label: t("nav.home") },
     { href: "/briefing", label: t("nav.briefing") },
+    ...THEME_KEYS.map((theme) => ({
+      href: `/theme/${THEME_SLUGS[theme]}`,
+      label: t(`themes.${theme}.label`),
+    })),
   ];
 
   return (

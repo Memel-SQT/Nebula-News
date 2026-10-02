@@ -1,68 +1,68 @@
 {
   "app": {
     "name": "Nebula News",
-    "tagline": "Your daily briefing on the world"
+    "tagline": "Personal growth, finance and tech, every day"
   },
   "nav": {
     "home": "Home",
-    "briefing": "Today's Briefing",
-    "favorites": "Favorites",
+    "briefing": "Today's briefing",
+    "themes": "Themes",
     "nebulaApps": "Nebula apps"
   },
-  "regions": {
-    "FRANCE": "France & French-speaking Europe",
-    "NORTH_AMERICA": "North America",
-    "ANGLOSAXON": "Anglo-Saxon World",
-    "GLOBAL": "Global"
-  },
-  "categories": {
-    "WORLD": "World",
-    "POLITICS": "Politics",
-    "ECONOMY": "Economy",
-    "TECH": "Tech",
-    "SCIENCE": "Science",
-    "CULTURE": "Culture",
-    "ENVIRONMENT": "Environment",
-    "SPORTS": "Sports",
-    "HEALTH": "Health"
+  "themes": {
+    "FOCUS": {
+      "label": "Personal growth",
+      "description": "Organization, habits, focus and life balance.",
+      "app": "For Nebula Clock"
+    },
+    "FINANCE": {
+      "label": "Finance",
+      "description": "Budgeting, saving, investing and financial literacy.",
+      "app": "For Nebula Finterest"
+    },
+    "TECH": {
+      "label": "Tech & computing",
+      "description": "Computing, software, AI, security and hardware.",
+      "app": "For Nebula Hub"
+    }
   },
   "languages": {
     "FR": "French",
     "EN": "English"
   },
   "filters": {
-    "allRegions": "All regions",
-    "allCategories": "All topics",
     "allLanguages": "All languages",
-    "search": "Search the news...",
-    "today": "Today",
+    "search": "Search articles...",
+    "searchLabel": "Search",
+    "languageLabel": "Article language",
     "clear": "Clear filters"
   },
   "home": {
-    "title": "The world, at a glance",
-    "subtitle": "A curated feed of neutral news from France, North America, and the Anglo-Saxon world.",
+    "title": "Your three themes, at a glance",
+    "subtitle": "Personal growth, finance and tech: a selection of reference sources, in French and English.",
     "empty": "No articles match these filters yet.",
     "loadMore": "Load more articles",
+    "previous": "Previous page",
     "briefingCta": "See today's briefing",
-    "sourceCount": "{count} sources tracked"
+    "total": "{count} articles in all"
+  },
+  "theme": {
+    "seeAll": "The whole theme",
+    "empty": "No articles in this theme yet. The next collection is coming soon."
   },
   "briefing": {
-    "title": "Today's Briefing",
-    "subtitle": "The essential world news, distilled into {count} key stories.",
-    "themesTitle": "Today's big themes",
-    "whyItMatters": "Why it matters",
+    "title": "Today's briefing",
+    "subtitle": "The essentials of your three themes, in {count} articles.",
     "empty": "Today's briefing is still being prepared. Check back in a few minutes."
   },
   "article": {
     "readOriginal": "Read the original article",
     "source": "Source",
     "publishedOn": "Published on",
-    "relatedTopics": "Related topics",
     "backToHome": "Back to home"
   },
   "common": {
     "loading": "Loading...",
-    "error": "Something went wrong.",
-    "minutesAgo": "{n} min ago"
+    "error": "Something went wrong."
   }
 }

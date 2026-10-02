@@ -2,23 +2,23 @@
 
 import { useCallback, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import type { CategoryKey, Language, Region } from "@/types";
+import { isThemeKey, type Language } from "@/types";
 import { useI18n } from "@/lib/i18n/client";
-import { RegionFilter } from "./RegionFilter";
-import { CategoryChips } from "./CategoryChips";
+import { ThemeChips } from "./ThemeChips";
 
 const LANGUAGES: Language[] = ["FR", "EN"];
 
-export function FilterBar() {
+/** Search, article language and (on the home page) theme filters, kept in the URL. */
+export function FilterBar({ showThemes = true }: { showThemes?: boolean }) {
   const { t } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
 
-  const region = searchParams.get("region") as Region | null;
   const language = searchParams.get("language") as Language | null;
-  const category = searchParams.get("category") as CategoryKey | null;
+  const themeParam = searchParams.get("theme");
+  const theme = isThemeKey(themeParam) ? themeParam : null;
   const q = searchParams.get("q") ?? "";
 
   const updateParam = useCallback(
@@ -26,6 +26,7 @@ export function FilterBar() {
       const params = new URLSearchParams(searchParams.toString());
       if (value) params.set(key, value);
       else params.delete(key);
+      params.delete("page");
       startTransition(() => router.push(`${pathname}?${params.toString()}`));
     },
     [pathname, router, searchParams, startTransition]
@@ -35,18 +36,21 @@ export function FilterBar() {
     <div className="mb-8 flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
         <input
+          type="search"
+          aria-label={t("filters.searchLabel")}
           defaultValue={q}
           onKeyDown={(e) => {
             if (e.key === "Enter") updateParam("q", e.currentTarget.value || null);
           }}
-          onBlur={(e) => updateParam("q", e.currentTarget.value || null)}
+          onBlur={(e) => {
+            if (e.currentTarget.value !== q) updateParam("q", e.currentTarget.value || null);
+          }}
           placeholder={t("filters.search")}
           className="w-full max-w-xs rounded-lg border border-nebula-border bg-nebula-card px-4 py-2.5 text-sm text-nebula-text placeholder:text-nebula-text-secondary focus:border-nebula-violet focus:outline-none"
         />
 
-        <RegionFilter value={region} onChange={(r) => updateParam("region", r)} />
-
         <select
+          aria-label={t("filters.languageLabel")}
           value={language ?? ""}
           onChange={(e) => updateParam("language", e.target.value || null)}
           className="rounded-lg border border-nebula-border bg-nebula-card px-3 py-2.5 text-sm text-nebula-text focus:border-nebula-violet focus:outline-none"
@@ -59,8 +63,9 @@ export function FilterBar() {
           ))}
         </select>
 
-        {(region || language || category || q) && (
+        {(language || theme || q) && (
           <button
+            type="button"
             onClick={() => router.push(pathname)}
             className="text-sm font-medium text-nebula-text-secondary underline-offset-4 hover:text-nebula-text hover:underline"
           >
@@ -69,10 +74,7 @@ export function FilterBar() {
         )}
       </div>
 
-      <CategoryChips
-        value={category}
-        onChange={(c) => updateParam("category", c)}
-      />
+      {showThemes ? <ThemeChips value={theme} onChange={(next) => updateParam("theme", next)} /> : null}
     </div>
   );
 }
