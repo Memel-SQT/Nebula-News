@@ -5,29 +5,24 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function timeAgo(date: Date, locale: "fr" | "en"): string {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  const steps: [number, string, string][] = [
-    [60, "s", "s"],
-    [60, "min", "m"],
-    [24, "h", "h"],
-    [7, "j", "d"],
-  ];
-
-  let value = seconds;
-  let unitFr = "s";
-  let unitEn = "s";
-  for (const [size, fr, en] of steps) {
-    if (value < size) break;
-    value = Math.floor(value / size);
-    unitFr = fr;
-    unitEn = en;
-  }
+/**
+ * Short relative time ("il y a 5 min", "3h ago"). Each unit is computed on its own scale: the
+ * previous loop divided before naming the unit, so 10 minutes read "10 s" and 10 hours "10 min".
+ */
+export function timeAgo(date: Date, locale: "fr" | "en", now: Date = new Date()): string {
+  const seconds = Math.max(0, Math.floor((now.getTime() - date.getTime()) / 1000));
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
 
   if (locale === "fr") {
-    if (seconds < 60) return "à l'instant";
-    return `il y a ${value} ${unitFr}`;
+    if (minutes < 1) return "à l'instant";
+    if (hours < 1) return `il y a ${minutes} min`;
+    if (days < 1) return `il y a ${hours} h`;
+    return `il y a ${days} j`;
   }
-  if (seconds < 60) return "just now";
-  return `${value}${unitEn} ago`;
+  if (minutes < 1) return "just now";
+  if (hours < 1) return `${minutes}m ago`;
+  if (days < 1) return `${hours}h ago`;
+  return `${days}d ago`;
 }
