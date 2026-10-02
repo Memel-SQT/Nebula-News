@@ -1,6 +1,6 @@
 {
   "name": "nebula-news",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Daily world news briefing, aggregated from neutral French/English sources, in a premium dark cosmic UI.",
   "author": "Nebula News",
   "private": true,
