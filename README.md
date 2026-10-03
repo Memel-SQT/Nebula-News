@@ -19,9 +19,8 @@ database to host, just an installer. The same code also works as a
 Postgres-backed hosted web app if you'd rather deploy it (see
 [Running as a hosted web app](#running-as-a-hosted-web-app-instead)).
 
-Visual identity is shared 1:1 with the [Nebula](../Nebula) desktop app: the
-same black → navy → violet gradient, card system, and typography, ported from
-its `theme.css` into Tailwind tokens (see [Design system](#design-system)).
+Its interface is the Nebula family's, identical to Nebula Hub's (see
+[Design system](#design-system)).
 
 ## Tech stack
 
@@ -46,25 +45,35 @@ of scope for a first pass. See [Adding authentication](#adding-authentication).
 
 ```
 app/
-  layout.tsx              root layout: locale, I18nProvider, Navbar, bg glow
+  layout.tsx              root layout: appearance from the cookie, sidebar, Hub mode band
   page.tsx                home dashboard (filters + article grid)
   briefing/page.tsx        daily briefing (one section per theme)
   theme/[theme]/page.tsx   one theme: /theme/focus, /theme/finance, /theme/tech
   article/[id]/page.tsx    article detail view
+  sources/page.tsx         followed sources and their last collection
+  settings/page.tsx        appearance (+ Nebula Hub on the desktop)
   api/
     articles/route.ts       GET  filtered article list
     briefing/today/route.ts GET  today's briefing
     search/route.ts         GET  keyword search
     ingest/route.ts          GET/POST ingestion trigger (cron / Electron scheduler / manual)
 components/
-  ui/          Badge, Button, Card — shared primitives
-  layout/      Navbar, PageShell, SectionHeader, BgGlow
-  filters/     LanguageToggle, ThemeChips, FilterBar
-  news/        NewsCard, Tag, ArticleGrid, Pagination
+  appearance/  AppearanceProvider (applies the appearance, background, sounds)
+  shell/       Sidebar, PageFrame, ScreenState, CollectBanner, DetachBand
+  settings/    SettingsPanel
+  filters/     FilterBar
+  news/        NewsCard, ArticleGrid, Pagination
+styles/
+  nebula/      @nebula/design styles (ported from Nebula Hub)
+  news/        Hub shell styles, bridge.css, news.css
 lib/
   db.ts                    Prisma client singleton
   articles.ts              data access layer (list/search/briefing queries)
   utils.ts                 cn(), timeAgo()
+  appearance/              appearance cookie (parse, accent sheet, boot script), server reader
+  nebula-design/           @nebula/design modules + Tailwind preset (ported)
+  navigation.ts            sidebar sections and theme icons
+  collect.ts               collection status (offline banner) and Sources overview
   i18n/                    fr.json, en.json, dictionary + locale helpers
   sources/config.ts        the configurable source list
   ingestion/               fetchFeeds, normalize, run (orchestrator)
@@ -206,14 +215,17 @@ named pipe — never a network call. It only shares public data:
 - **"Your briefing is ready"** in the Hub's activity centre, once a day;
 - deep links and the intent `news.open-briefing` (`nebula://news/briefing`),
   which Nebula Clock's long breaks can offer;
-- the **Nebula language**, applied only when it changes in the Hub, so the
-  app's own language toggle keeps working;
+- the **Nebula appearance** (theme, accent, background, motion, sounds,
+  language), applied 1:1 while "Follow Nebula Hub's appearance" is on
+  (Settings > Nebula Hub);
 - the **Hub mode**: the window can open inside the Hub's window (frameless,
-  placed by the Hub), and comes back to normal when released or when the Hub
-  goes away.
+  placed by the Hub, with a "Detach" band to bring it back), and comes back to
+  normal when released or when the Hub goes away.
 
-A "Nebula apps" link in the navigation (desktop only) opens the Hub, or its
-download page when it is not installed. Without the Hub nothing changes. The
+"Nebula apps" in the sidebar (desktop only) opens the Hub, or its download
+page when it is not installed; the "Nebula Hub" card below it shows whether
+the Hub is connected. The main process talks to the page only through cookies
+the local server reads (appearance, Hub status, Hub mode): no preload, no IPC. Without the Hub nothing changes. The
 pure rules are tested with `npm test` (`node --test`).
 
 Also in the desktop shell: one instance at a time (a second launch or a deep
@@ -286,25 +298,45 @@ rows by key, so no migration is needed. Their FR/EN labels are under
 
 ## Design system
 
-Colors, gradients, and component patterns are ported directly from the
-Nebula desktop app's `theme.css` into `tailwind.config.ts` /
-`app/globals.css`:
+Nebula News looks and behaves like the rest of the family (Nebula Hub is the
+living reference): same shell, sidebar, icons, appearance settings,
+components and motion. Nothing is retyped: the files are copied, each with
+its origin in a header.
 
-| Token | Hex | Use |
+| What | Where | From |
 |---|---|---|
-| `nebula-bg` | `#0A0A0F` | page background |
-| `nebula-surface` | `#12121F` | secondary surface |
-| `nebula-card` | `#1A1A2E` | card background |
-| `nebula-card-alt` | `#231942` | hover/alt surface, inputs |
-| `nebula-border` | `#2A2A45` | borders |
-| `nebula-blue` → `nebula-violet` | `#4C6EF5` → `#8B5CF6` | primary gradient (buttons, accents, "big themes") |
-| `nebula-text` | `#F1F1F6` | body text |
-| `nebula-text-secondary` | `#9A94B8` | muted text |
+| Tokens, 4 themes, base elements, backgrounds, motion, settings controls | `styles/nebula/` | Nebula Hub `packages/nebula-design/src/styles` |
+| Appearance model, themes, sounds, effects, animated background, icons | `lib/nebula-design/` | Nebula Hub `packages/nebula-design/src` |
+| Shell, sidebar, dashboard grammar (KPI cards, panels, states) | `styles/news/hub-*.css` | Nebula Hub `src/renderer/styles` |
+| Tailwind preset | `lib/nebula-design/tailwind-preset.ts` | `nebula-design-system/tokens` |
+| News-only rules (article cards, filters, Sources, Hub mode band) | `styles/news/news.css` | variables only, no color value |
 
-Typography is Inter (loaded via Google Fonts in `app/globals.css`), matching
-the "modern sans-serif, clear hierarchy" brief. The ambient `bg-glow` drift
-animation and card/button hover treatments are the same ones used in the
-Nebula desktop app, just reimplemented as Tailwind utilities.
+`styles/news/bridge.css` maps the preset's variable names (`--bg-base`,
+`--card`…) onto the @nebula/design ones, so both work unchanged. Tailwind's
+preflight is off: `styles/nebula/base.css` is the reset, as in the Hub.
+Fonts are the Hub's (Aptos / Segoe UI Variable): no web font, so no request to
+Google Fonts. The two icons drawn for News (`newspaper`, `rss`) follow the
+set's rules (24 px grid, 1.8 px stroke, one duotone shape) and are tested.
+
+### Appearance (Settings)
+
+Theme (Nebula dark / light, Glass dark / light, System), language, accent
+(7 presets, custom with two colors), animated background (6), interface
+motion (full / reduced / off), sounds and volume, and "Reset appearance":
+the model, values, defaults and labels of Nebula Hub.
+
+It is stored in the `nebula-appearance` cookie (`lib/appearance/shared.ts`),
+read field by field (an unknown value falls back to its default without
+touching the others; versions before 0.4.0 had no cookie, so everyone starts
+on the family defaults). The root layout renders `data-theme`,
+`data-motion`, `data-background` and the accent variables from it, and a
+few-line script in `<head>` resolves "System" before the first paint, so
+nothing flashes, on the web as on the desktop.
+
+On the desktop, **Follow Nebula Hub's appearance** (on by default) writes
+the appearance the Hub broadcasts into the same cookie, 1:1, and the window
+controls (`titleBarOverlay`) follow the chosen theme. Without the Hub, the
+app keeps its own settings.
 
 ## Internationalization
 
@@ -318,10 +350,10 @@ dictionaries, `translate()` does dot-path + `{placeholder}` lookup
 - **Client** components use `useI18n()` from `lib/i18n/client.tsx`
   (`I18nProvider` wraps the app in `app/layout.tsx`).
 
-The `LanguageToggle` in the navbar sets the `nebula-locale` cookie and
-reloads — this only changes the **interface** language. Article content
-stays in its original language; use the separate content-language filter
-in the filter bar to show only FR or only EN articles.
+The language is chosen in Settings > Appearance (it sets the
+`nebula-locale` cookie and reloads) — this only changes the **interface**
+language. Article content stays in its original language; use the language
+filter above the articles to show only French or only English ones.
 
 ## Running as a hosted web app instead
 
