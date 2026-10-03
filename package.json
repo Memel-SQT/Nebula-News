@@ -19,7 +19,7 @@
     "electron:dev": "electron .",
     "build:template-db": "node scripts/build-template-db.mjs",
     "build:desktop": "npm run build && node scripts/prepare-desktop-build.mjs && npm run build:template-db && electron-builder --win",
-    "test": "node --test desktop/nebula-rules.test.js && node --import tsx --test lib/themes.test.ts lib/utils.test.ts"
+    "test": "node --test desktop/nebula-rules.test.js && node --import tsx --test lib/themes.test.ts lib/utils.test.ts lib/collect-rules.test.ts lib/ingestion/normalize.test.ts lib/appearance/appearance.test.ts lib/nebula-design/Icon.test.tsx"
   },
   "dependencies": {
     "@nebula/link": "https://github.com/Memel-SQT/Nebula-Hub/releases/download/link-v1.0.0/nebula-link-1.0.0.tgz",

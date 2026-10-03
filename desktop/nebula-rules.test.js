@@ -4,7 +4,18 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const { parseManifest } = require("@nebula/link");
-const { THEMES, headlinesWidget, themeWidget, briefingReadyNotification, languageToApply, externalTarget, isDockPayload } = require("./nebula-rules");
+const {
+  THEMES,
+  headlinesWidget,
+  themeWidget,
+  briefingReadyNotification,
+  hubAppearanceCookie,
+  hubLanguage,
+  themeOfCookie,
+  chromeColors,
+  externalTarget,
+  isDockPayload,
+} = require("./nebula-rules");
 
 const briefing = {
   date: "2026-10-02",
@@ -69,9 +80,29 @@ test("the briefing is announced once a day", () => {
 });
 
 test("the Nebula language applies only when it changes", () => {
-  assert.equal(languageToApply({ language: "en" }, null), "en");
-  assert.equal(languageToApply({ language: "en" }, "en"), null);
-  assert.equal(languageToApply({ language: "de" }, null), null);
+  assert.equal(hubLanguage({ language: "en" }), "en");
+  assert.equal(hubLanguage({ language: "de" }), null);
+  assert.equal(hubLanguage(null), null);
+});
+
+test("the Hub appearance becomes the app's cookie, stored fields only", () => {
+  const value = hubAppearanceCookie({ theme: "glass-dark", accentPreset: "ocean", background: "stars", motion: "reduced", soundEnabled: false, soundVolume: 30, customPrimary: "#8b5cf6", customSecondary: "#4c6ef5", language: "en", extra: 1 });
+  const parsed = JSON.parse(decodeURIComponent(value));
+  assert.equal(parsed.theme, "glass-dark");
+  assert.equal(parsed.accentPreset, "ocean");
+  assert.equal("language" in parsed, false);
+  assert.equal("extra" in parsed, false);
+  assert.equal(hubAppearanceCookie(null), null);
+  assert.equal(hubAppearanceCookie({ language: "fr" }), null);
+});
+
+test("the window chrome follows the chosen theme", () => {
+  assert.equal(themeOfCookie(encodeURIComponent(JSON.stringify({ theme: "nebula-light" }))), "nebula-light");
+  assert.equal(themeOfCookie(undefined), "system");
+  assert.equal(themeOfCookie("%7Bbroken"), "system");
+  assert.deepEqual(chromeColors("nebula-light", true), { page: "#f4f3fb", ink: "#18172b" });
+  assert.deepEqual(chromeColors("system", false), chromeColors("nebula-light", true));
+  assert.deepEqual(chromeColors("system", true), chromeColors("nebula-dark", false));
 });
 
 test("only web pages and Nebula links leave the app", () => {

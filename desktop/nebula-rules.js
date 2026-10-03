@@ -97,14 +97,62 @@ function briefingReadyNotification(briefing, language, lastNotifiedDate) {
   };
 }
 
+// Cookies shared with the Next.js server (lib/appearance/shared.ts, lib/i18n/shared.ts): the
+// server renders the page from them, so the window chrome and the page always agree.
+const COOKIES = {
+  appearance: "nebula-appearance",
+  locale: "nebula-locale",
+  followHub: "nebula-follow-hub",
+  hubStatus: "nebula-hub-status",
+  docked: "nebula-docked",
+};
+
+/** The fields of the family appearance the app stores (the language has its own cookie). */
+const APPEARANCE_FIELDS = ["theme", "accentPreset", "customPrimary", "customSecondary", "background", "motion", "soundEnabled", "soundVolume"];
+
 /**
- * The language the Hub broadcasts is applied only when it changes, so a choice made in the app's
- * own toggle stays until the Nebula language really changes.
+ * The cookie value for the appearance Nebula Hub broadcasts (NebulaAppearance, already
+ * validated by the Hub): the stored fields only, in the order serializeAppearance writes them,
+ * so an unchanged appearance gives the same value and the page is not reloaded for nothing.
+ * The server reads it field by field (a missing field falls back to its default).
  */
-function languageToApply(appearance, lastHubLanguage) {
-  const language = appearance?.language;
-  if (language !== "fr" && language !== "en") return null;
-  return language === lastHubLanguage ? null : language;
+function hubAppearanceCookie(appearance) {
+  if (!appearance || typeof appearance !== "object") return null;
+  const picked = {};
+  for (const field of APPEARANCE_FIELDS) {
+    if (appearance[field] !== undefined) picked[field] = appearance[field];
+  }
+  return Object.keys(picked).length > 0 ? encodeURIComponent(JSON.stringify(picked)) : null;
+}
+
+/** The Hub's language, when it is one the app speaks. */
+function hubLanguage(appearance) {
+  return appearance?.language === "fr" || appearance?.language === "en" ? appearance.language : null;
+}
+
+/** The theme chosen in the appearance cookie ("system" when absent or unreadable). */
+function themeOfCookie(raw) {
+  try {
+    const theme = JSON.parse(decodeURIComponent(raw ?? ""))?.theme;
+    return ["nebula-dark", "nebula-light", "glass-dark", "glass-light", "system"].includes(theme) ? theme : "system";
+  } catch {
+    return "system";
+  }
+}
+
+/** Page and ink colors of each theme, for the native window chrome. Ported from Nebula Hub
+ *  05204fd (src/electron/window.ts, CHROME), itself read from tokens.css. */
+const CHROME = {
+  "nebula-dark": { page: "#0a0a0f", ink: "#f1f1f6" },
+  "nebula-light": { page: "#f4f3fb", ink: "#18172b" },
+  "glass-dark": { page: "#06060f", ink: "#f5f4ff" },
+  "glass-light": { page: "#e9ebf8", ink: "#17162a" },
+};
+
+/** Window background and control colors for a chosen theme (`system` follows the OS). */
+function chromeColors(theme, prefersDark) {
+  const resolved = theme === "system" ? (prefersDark ? "nebula-dark" : "nebula-light") : theme;
+  return CHROME[resolved] ?? CHROME["nebula-dark"];
 }
 
 /** Only http(s) pages go to the browser; nebula:// links go to Nebula Hub; nothing else opens. */
@@ -127,4 +175,20 @@ function isDockPayload(value) {
   return value.state === "docked" && typeof value.visible === "boolean" && typeof value.raise === "boolean" && Boolean(b) && ["x", "y", "width", "height"].every((key) => Number.isInteger(b[key]));
 }
 
-module.exports = { THEMES, headlinesWidget, themeWidget, briefingReadyNotification, languageToApply, externalTarget, isDockPayload };
+/** The page that "Detach" (Hub mode band) navigates to; caught in will-navigate, never loaded. */
+const DETACH_PATH = "/__nebula/detach";
+
+module.exports = {
+  THEMES,
+  COOKIES,
+  DETACH_PATH,
+  headlinesWidget,
+  themeWidget,
+  briefingReadyNotification,
+  hubAppearanceCookie,
+  hubLanguage,
+  themeOfCookie,
+  chromeColors,
+  externalTarget,
+  isDockPayload,
+};

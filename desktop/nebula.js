@@ -3,13 +3,14 @@
 //
 // Shared (public only): the first three stories of today's briefing (one per theme), one widget
 // per theme (personal growth for Nebula Clock, finance for Nebula Finterest, tech for the Hub),
-// and "your briefing is ready" once a day. Received: the Nebula language (applied only when it
-// changes, so the app's own toggle keeps working), the Hub mode placement, and deep links /
-// intents (open the app, open the briefing — Nebula Clock's long breaks can offer it).
+// and "your briefing is ready" once a day. Received: the Nebula appearance (theme, accent,
+// background, motion, sounds, language — applied 1:1 by main.js when "Follow Nebula Hub's
+// appearance" is on), the Hub mode placement, and deep links / intents (open the app, the
+// briefing — Nebula Clock's long breaks can offer it — or a theme).
 const fs = require("node:fs");
 const path = require("node:path");
 const { NebulaLink } = require("@nebula/link");
-const { THEMES, headlinesWidget, themeWidget, briefingReadyNotification, languageToApply } = require("./nebula-rules");
+const { THEMES, headlinesWidget, themeWidget, briefingReadyNotification, hubLanguage } = require("./nebula-rules");
 
 const ROUTES = {
   "/": "/",
@@ -20,7 +21,7 @@ const ROUTES = {
 class NebulaIntegration {
   constructor(deps) {
     this.deps = deps;
-    this.settings = { lastHubLanguage: null, lastBriefingNotified: null };
+    this.settings = { lastBriefingNotified: null };
     this.hubLanguage = null;
     // NEBULA_LINK_SESSION_FILE points a manual test at a test-mode Hub; never set when installed.
     this.link = NebulaLink.create({
@@ -34,15 +35,12 @@ class NebulaIntegration {
   async start() {
     this.loadSettings();
     this.link.on("nebula.appearance.changed", (appearance) => {
-      if (appearance?.language === "fr" || appearance?.language === "en") this.hubLanguage = appearance.language;
-      const language = languageToApply(appearance, this.settings.lastHubLanguage);
-      if (!language) return;
-      this.settings.lastHubLanguage = language;
-      this.saveSettings();
-      this.deps.applyLanguage(language);
+      this.hubLanguage = hubLanguage(appearance) ?? this.hubLanguage;
+      this.deps.onAppearance(appearance);
     });
     this.link.on("nebula.hub.dock", (payload) => this.deps.onDock(payload));
     this.link.onStatus((status) => {
+      this.deps.onHubStatus(status);
       // Never stay frameless and placed for a Hub that is gone.
       if (status === "offline") this.deps.onDock({ state: "released" });
       if (status === "connected") void this.briefingMaybeReady();
@@ -97,7 +95,6 @@ class NebulaIntegration {
     try {
       const parsed = JSON.parse(fs.readFileSync(this.deps.settingsPath, "utf8"));
       this.settings = {
-        lastHubLanguage: parsed.lastHubLanguage === "fr" || parsed.lastHubLanguage === "en" ? parsed.lastHubLanguage : null,
         lastBriefingNotified: typeof parsed.lastBriefingNotified === "string" ? parsed.lastBriefingNotified : null,
       };
     } catch {
