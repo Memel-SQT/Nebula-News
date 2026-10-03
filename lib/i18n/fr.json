@@ -1,13 +1,30 @@
 {
   "app": {
     "name": "Nebula News",
-    "tagline": "Développement personnel, finance et tech, chaque jour"
+    "tagline": "Développement personnel, finance et tech"
   },
   "nav": {
-    "home": "Accueil",
+    "sections": "Sections",
+    "group": {
+      "briefing": "Briefing",
+      "themes": "Thèmes",
+      "sources": "Sources"
+    },
     "briefing": "Briefing du jour",
-    "themes": "Thèmes",
+    "all": "Tous les articles",
+    "sources": "Sources suivies",
+    "settings": "Réglages",
     "nebulaApps": "Apps Nebula"
+  },
+  "sidebar": {
+    "hub": {
+      "title": "Nebula Hub",
+      "connected": "Connecté",
+      "absent": "Absent"
+    },
+    "local": "Local, sans compte",
+    "localNote": "Rien ne quitte cet ordinateur, sauf la lecture des flux des sources.",
+    "version": "Version {version}"
   },
   "themes": {
     "FOCUS": {
@@ -31,38 +48,133 @@
     "EN": "Anglais"
   },
   "filters": {
-    "allLanguages": "Toutes les langues",
-    "search": "Rechercher un article...",
+    "allLanguages": "Toutes",
+    "search": "Rechercher un article…",
     "searchLabel": "Rechercher",
     "languageLabel": "Langue des articles",
     "clear": "Réinitialiser"
   },
   "home": {
-    "title": "Vos trois thèmes, en un coup d'œil",
+    "eyebrow": "Vos thèmes",
+    "title": "Vos trois thèmes, en un coup d’œil",
     "subtitle": "Développement personnel, finance et tech : une sélection de sources de référence, en français et en anglais.",
+    "themeCount": "{count} articles",
+    "listEyebrow": "Fil complet",
+    "emptyTitle": "Aucun article",
     "empty": "Aucun article ne correspond à ces filtres pour le moment.",
-    "loadMore": "Voir plus d'articles",
+    "loadMore": "Plus d’articles",
     "previous": "Page précédente",
     "briefingCta": "Voir le briefing du jour",
     "total": "{count} articles au total"
   },
-  "theme": {
+  "themePage": {
     "seeAll": "Tout le thème",
-    "empty": "Pas encore d'article dans ce thème. La prochaine collecte arrive bientôt."
+    "emptyTitle": "Pas encore d’article",
+    "empty": "Pas encore d’article dans ce thème. La prochaine collecte arrive bientôt."
   },
   "briefing": {
     "title": "Briefing du jour",
-    "subtitle": "L'essentiel de vos trois thèmes, en {count} articles.",
+    "subtitle": "L’essentiel de vos trois thèmes, en {count} articles.",
+    "emptyTitle": "Briefing en préparation",
     "empty": "Le briefing du jour est en cours de préparation. Revenez dans quelques minutes."
   },
   "article": {
-    "readOriginal": "Lire l'article original",
-    "source": "Source",
+    "readOriginal": "Lire l’article original",
+    "source": "Source :",
     "publishedOn": "Publié le",
-    "backToHome": "Retour à l'accueil"
+    "backToHome": "Retour à l’accueil"
   },
-  "common": {
-    "loading": "Chargement...",
-    "error": "Une erreur est survenue."
+  "sources": {
+    "eyebrow": "Sources",
+    "title": "Sources suivies",
+    "intro": "{count} sources de référence, relues toutes les trois heures. Un lien ouvre le site dans votre navigateur.",
+    "emptyTitle": "Aucune source",
+    "empty": "Les sources apparaîtront après la première collecte.",
+    "articles": "{count} articles",
+    "status": {
+      "ok": "À jour",
+      "error": "Injoignable",
+      "waiting": "En attente"
+    },
+    "visit": "Ouvrir le site de {name}"
+  },
+  "settings": {
+    "eyebrow": "Réglages",
+    "title": "Réglages",
+    "intro": "L’apparence est la même dans toutes les apps Nebula. Chaque changement s’applique tout de suite.",
+    "appearance": "Apparence",
+    "theme": "Thème",
+    "language": "Langue",
+    "glassHint": "Astuce : le verre liquide est à son meilleur avec l’arrière-plan « Aurore boréale ».",
+    "accent": "Couleurs d’accent",
+    "accentPrimary": "Couleur principale",
+    "accentSecondary": "Couleur secondaire",
+    "effects": "Effets et animations",
+    "background": "Arrière-plan animé",
+    "motion": "Animations de l’interface",
+    "sounds": "Sons",
+    "soundEnabled": "Sons de l’interface",
+    "soundVolume": "Volume",
+    "soundTest": "Tester",
+    "on": "Activés",
+    "off": "Désactivés",
+    "reset": "Réinitialiser l’apparence",
+    "followedHint": "L’apparence suit Nebula Hub. Coupez « Suivre l’apparence de Nebula Hub » pour la régler ici.",
+    "hub": "Nebula Hub",
+    "followHub": "Suivre l’apparence de Nebula Hub",
+    "followHubHint": "Thème, accent, arrière-plan, animations, sons et langue viennent du Hub quand il est ouvert. Sans le Hub, l’app garde ses propres réglages.",
+    "openHub": "Ouvrir Nebula Hub"
+  },
+  "appearance": {
+    "theme": {
+      "nebula-dark": "Nebula sombre",
+      "nebula-light": "Nebula clair",
+      "glass-dark": "Verre sombre",
+      "glass-light": "Verre clair",
+      "system": "Système"
+    },
+    "accent": {
+      "nebula": "Nebula",
+      "aurora": "Aurore",
+      "ocean": "Océan",
+      "sunset": "Couchant",
+      "sakura": "Sakura",
+      "ember": "Braise",
+      "custom": "Personnalisée"
+    },
+    "background": {
+      "glow": "Halo nébuleuse",
+      "aurora": "Aurore boréale",
+      "stars": "Champ d’étoiles",
+      "particles": "Constellation",
+      "waves": "Vagues",
+      "none": "Aucun"
+    },
+    "motion": {
+      "full": "Complètes",
+      "reduced": "Réduites",
+      "off": "Désactivées"
+    }
+  },
+  "state": {
+    "loading": "Chargement…",
+    "retry": "Réessayer",
+    "offline": {
+      "title": "Vous êtes hors ligne",
+      "body": "Affichage des derniers articles connus, collectés le {date}.",
+      "never": "Aucun article n’a encore pu être collecté."
+    },
+    "error": {
+      "title": "Une erreur est survenue",
+      "body": "Les articles n’ont pas pu être chargés. Réessayez dans un instant."
+    },
+    "notFound": {
+      "title": "Page introuvable",
+      "body": "Cette page n’existe pas ou plus. Le briefing du jour vous attend."
+    }
+  },
+  "dock": {
+    "inHub": "Affiché dans Nebula Hub",
+    "detach": "Détacher"
   }
 }

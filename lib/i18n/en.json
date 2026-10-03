@@ -1,13 +1,30 @@
 {
   "app": {
     "name": "Nebula News",
-    "tagline": "Personal growth, finance and tech, every day"
+    "tagline": "Personal growth, finance and tech"
   },
   "nav": {
-    "home": "Home",
+    "sections": "Sections",
+    "group": {
+      "briefing": "Briefing",
+      "themes": "Themes",
+      "sources": "Sources"
+    },
     "briefing": "Today's briefing",
-    "themes": "Themes",
+    "all": "All articles",
+    "sources": "Followed sources",
+    "settings": "Settings",
     "nebulaApps": "Nebula apps"
+  },
+  "sidebar": {
+    "hub": {
+      "title": "Nebula Hub",
+      "connected": "Connected",
+      "absent": "Not running"
+    },
+    "local": "Local, no account",
+    "localNote": "Nothing leaves this computer, except reading the sources' feeds.",
+    "version": "Version {version}"
   },
   "themes": {
     "FOCUS": {
@@ -31,38 +48,133 @@
     "EN": "English"
   },
   "filters": {
-    "allLanguages": "All languages",
-    "search": "Search articles...",
+    "allLanguages": "All",
+    "search": "Search articles…",
     "searchLabel": "Search",
     "languageLabel": "Article language",
     "clear": "Clear filters"
   },
   "home": {
+    "eyebrow": "Your themes",
     "title": "Your three themes, at a glance",
     "subtitle": "Personal growth, finance and tech: a selection of reference sources, in French and English.",
+    "themeCount": "{count} articles",
+    "listEyebrow": "Full feed",
+    "emptyTitle": "No articles",
     "empty": "No articles match these filters yet.",
-    "loadMore": "Load more articles",
+    "loadMore": "More articles",
     "previous": "Previous page",
     "briefingCta": "See today's briefing",
     "total": "{count} articles in all"
   },
-  "theme": {
+  "themePage": {
     "seeAll": "The whole theme",
+    "emptyTitle": "No articles yet",
     "empty": "No articles in this theme yet. The next collection is coming soon."
   },
   "briefing": {
     "title": "Today's briefing",
     "subtitle": "The essentials of your three themes, in {count} articles.",
+    "emptyTitle": "Briefing in preparation",
     "empty": "Today's briefing is still being prepared. Check back in a few minutes."
   },
   "article": {
     "readOriginal": "Read the original article",
-    "source": "Source",
+    "source": "Source:",
     "publishedOn": "Published on",
     "backToHome": "Back to home"
   },
-  "common": {
-    "loading": "Loading...",
-    "error": "Something went wrong."
+  "sources": {
+    "eyebrow": "Sources",
+    "title": "Followed sources",
+    "intro": "{count} reference sources, read every three hours. A link opens the site in your browser.",
+    "emptyTitle": "No sources",
+    "empty": "Sources appear after the first collection.",
+    "articles": "{count} articles",
+    "status": {
+      "ok": "Up to date",
+      "error": "Unreachable",
+      "waiting": "Waiting"
+    },
+    "visit": "Open the {name} website"
+  },
+  "settings": {
+    "eyebrow": "Settings",
+    "title": "Settings",
+    "intro": "The appearance is the same in every Nebula app. Every change applies at once.",
+    "appearance": "Appearance",
+    "theme": "Theme",
+    "language": "Language",
+    "glassHint": "Tip: liquid glass looks its best with the “Aurora” background.",
+    "accent": "Accent colors",
+    "accentPrimary": "Main color",
+    "accentSecondary": "Secondary color",
+    "effects": "Effects and motion",
+    "background": "Animated background",
+    "motion": "Interface motion",
+    "sounds": "Sounds",
+    "soundEnabled": "Interface sounds",
+    "soundVolume": "Volume",
+    "soundTest": "Test",
+    "on": "On",
+    "off": "Off",
+    "reset": "Reset appearance",
+    "followedHint": "The appearance follows Nebula Hub. Turn off “Follow Nebula Hub's appearance” to set it here.",
+    "hub": "Nebula Hub",
+    "followHub": "Follow Nebula Hub's appearance",
+    "followHubHint": "Theme, accent, background, motion, sounds and language come from the Hub while it is open. Without the Hub, the app keeps its own settings.",
+    "openHub": "Open Nebula Hub"
+  },
+  "appearance": {
+    "theme": {
+      "nebula-dark": "Nebula dark",
+      "nebula-light": "Nebula light",
+      "glass-dark": "Glass dark",
+      "glass-light": "Glass light",
+      "system": "System"
+    },
+    "accent": {
+      "nebula": "Nebula",
+      "aurora": "Aurora",
+      "ocean": "Ocean",
+      "sunset": "Sunset",
+      "sakura": "Sakura",
+      "ember": "Ember",
+      "custom": "Custom"
+    },
+    "background": {
+      "glow": "Nebula glow",
+      "aurora": "Aurora",
+      "stars": "Starfield",
+      "particles": "Constellation",
+      "waves": "Waves",
+      "none": "None"
+    },
+    "motion": {
+      "full": "Full",
+      "reduced": "Reduced",
+      "off": "Off"
+    }
+  },
+  "state": {
+    "loading": "Loading…",
+    "retry": "Try again",
+    "offline": {
+      "title": "You are offline",
+      "body": "Showing the last known articles, collected on {date}.",
+      "never": "No article could be collected yet."
+    },
+    "error": {
+      "title": "Something went wrong",
+      "body": "The articles could not be loaded. Try again in a moment."
+    },
+    "notFound": {
+      "title": "Page not found",
+      "body": "This page does not exist (anymore). Today's briefing is waiting for you."
+    }
+  },
+  "dock": {
+    "inHub": "Shown in Nebula Hub",
+    "detach": "Detach"
   }
 }
