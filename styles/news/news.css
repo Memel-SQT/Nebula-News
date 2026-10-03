@@ -1,0 +1,121 @@
+/* Nebula News on the family grammar. Everything here reads @nebula/design variables (no
+   color value), on top of the ported Hub styles (hub-app.css, hub-dashboard.css,
+   hub-sidebar.css). Radii: 8 px controls, 12–14 px cards, 18 px panels, 999 px pills. */
+
+/* Tailwind's preflight is off (tailwind.config.ts): the few resets the Hub gets from its own
+   markup. */
+body { margin: 0; }
+a { color: inherit; text-decoration: none; }
+img { display: block; max-width: 100%; }
+h1, h2, h3, p { margin: 0; }
+
+/* From Nebula Hub 05204fd (src/renderer/styles/installed.css): buttons that should look like
+   the element they wrap, not like a call to action. */
+button.plain { min-height: auto; padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; font-weight: inherit; letter-spacing: inherit; box-shadow: none; }
+button.plain:hover, button.plain:active { transform: none; background: transparent; box-shadow: none; }
+
+/* Links that read as buttons: the same recipes as base.css `button` / `button.ghost`. */
+.button-link { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; min-height: 2.65rem; border: 1px solid transparent; border-radius: var(--radius); padding: 0.7rem 1.05rem; background: var(--accent-gradient); color: var(--on-accent); font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; transition: transform var(--motion-fast) var(--ease), background var(--motion-fast) var(--ease), border-color var(--motion-fast) var(--ease), box-shadow var(--motion-fast) var(--ease); }
+.button-link:hover { transform: translateY(-1px); background: var(--accent-gradient-hover); box-shadow: 0 10px 26px -12px var(--accent-glow); }
+.button-link.ghost { background: transparent; color: var(--ink); border-color: var(--line-strong); font-weight: 650; box-shadow: none; }
+.button-link.ghost:hover { background: var(--surface-raised); border-color: var(--accent); box-shadow: none; }
+.button-link.small { min-height: 2.1rem; padding: 0.45rem 0.75rem; font-size: 0.75rem; }
+:root[data-motion='reduced'] .button-link:hover { transform: none; }
+
+/* The sidebar entries are links here (buttons in the Hub). */
+.sidebar a.nav-item, .sidebar a.link-card { text-decoration: none; }
+.brand-lockup .hub-mark { width: 40px; height: 40px; }
+
+/* Hub mode (desktop): no drag strip and no window controls, the Hub places the window. */
+:root[data-docked='1'] .workspace { padding-top: clamp(1.2rem, 3vw, 2.4rem); }
+.detach-band { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; gap: 0.8rem; margin: 0.75rem clamp(1rem, 5vw, 5rem) 0; padding: 0.55rem 0.6rem 0.55rem 0.9rem; border: 1px solid var(--line); border-radius: var(--radius); background: color-mix(in srgb, var(--surface) 88%, transparent); color: var(--muted); font-size: 0.78rem; -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); animation: banner-in var(--motion-base) var(--ease-out) both; }
+.detach-band .icon { color: var(--accent-hover); }
+.detach-band span { flex: 1 1 auto; }
+@media (max-width: 1100px) { .detach-band { margin-inline: 1.6rem; } }
+
+/* Theme cards on the home page (the KPI grammar of hub-dashboard.css). */
+.theme-card { display: flex; flex-direction: column; color: var(--ink); }
+.theme-card .card-top { font-weight: 650; }
+.theme-card p { margin-top: 0.8rem; color: var(--muted); font-size: 0.8rem; line-height: 1.55; }
+.theme-card .theme-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-top: auto; padding-top: 1rem; color: var(--muted); font-size: 0.72rem; }
+.theme-card .theme-card-foot b { color: var(--accent-hover); font-size: 0.74rem; }
+.theme-card:hover { border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+.theme-card:hover .theme-card-foot .icon { transform: translateX(2px); }
+.theme-card-foot .icon { transition: transform var(--motion-fast) var(--ease); }
+
+/* Filters */
+.filter-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem; margin-bottom: 1.6rem; }
+.filter-chips { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+button.filter-chip { min-height: 2.1rem; padding: 0.4rem 0.85rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-muted); color: var(--muted); font-size: 0.76rem; font-weight: 650; box-shadow: none; }
+button.filter-chip:hover { transform: none; border-color: var(--line-strong); background: var(--surface-raised); color: var(--ink); box-shadow: none; }
+button.filter-chip.active { border-color: color-mix(in srgb, var(--accent) 45%, transparent); background: var(--accent-soft); color: var(--accent-hover); }
+.filter-bar .segmented { flex: 0 0 auto; }
+button.filter-clear { min-height: 2.1rem; }
+
+/* Article grid and cards: Card grammar (14 px, 1 px border, no shadow in the dark themes),
+   images at a fixed 16:9 so nothing shifts while they load. */
+.article-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 1rem; }
+.article-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); animation: rise-in var(--motion-slow) var(--ease-out) both; transition: transform var(--motion-base) var(--ease-out), border-color var(--motion-base) var(--ease); }
+:root[data-theme$='-light'] .article-card { box-shadow: var(--shadow); }
+:root[data-theme^='glass-'] .article-card { background: linear-gradient(145deg, var(--glass-hi), var(--glass-lo)); -webkit-backdrop-filter: blur(22px) saturate(175%); backdrop-filter: blur(22px) saturate(175%); box-shadow: inset 0 1px 0 var(--glass-edge), var(--shadow); }
+.article-grid > :nth-child(2) { animation-delay: 40ms; }
+.article-grid > :nth-child(3) { animation-delay: 80ms; }
+.article-grid > :nth-child(4) { animation-delay: 120ms; }
+.article-grid > :nth-child(5) { animation-delay: 160ms; }
+.article-grid > :nth-child(n+6) { animation-delay: 200ms; }
+.article-card:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+:root[data-motion='reduced'] .article-card:hover { transform: none; }
+.article-card > a { display: flex; flex: 1 1 auto; flex-direction: column; border-radius: inherit; }
+.article-card > a:focus-visible { outline-offset: -2px; }
+.article-media { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: var(--surface-raised); }
+.article-media img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--motion-slow) var(--ease-out); }
+.article-card:hover .article-media img { transform: scale(1.04); }
+:root[data-motion='reduced'] .article-card:hover .article-media img { transform: none; }
+.article-media-fallback { display: grid; place-items: center; width: 100%; height: 100%; color: var(--accent-hover); }
+.article-media-fallback span { display: grid; place-items: center; width: 3rem; height: 3rem; border-radius: 14px; background: var(--accent-soft); }
+.article-body { display: flex; flex: 1 1 auto; flex-direction: column; gap: 0.6rem; padding: 1rem 1.1rem 1.05rem; }
+.article-body h3 { margin: 0; font-size: 0.98rem; font-weight: 700; line-height: 1.35; letter-spacing: -0.01em; }
+.article-summary { display: -webkit-box; overflow: hidden; color: var(--muted); font-size: 0.82rem; line-height: 1.55; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.article-meta { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-top: auto; padding-top: 0.4rem; color: var(--muted); font-size: 0.72rem; }
+.article-meta strong { overflow: hidden; color: var(--ink); font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.article-meta time { flex: 0 0 auto; }
+.theme-chip { display: inline-flex; align-items: center; gap: 0.3rem; align-self: flex-start; padding: 0.22rem 0.55rem; border-radius: 999px; background: var(--accent-soft); color: var(--accent-hover); font-size: 0.66rem; font-weight: 750; letter-spacing: 0.02em; }
+
+/* Briefing sections */
+.briefing-section + .briefing-section { margin-top: 2.4rem; }
+.briefing-section .section-heading { align-items: end; }
+.briefing-section .section-heading p.eyebrow { margin-bottom: 0.35rem; }
+
+/* Pagination */
+.pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.7rem; margin-top: 2.2rem; }
+.list-total { margin-top: 1rem; color: var(--muted); font-size: 0.72rem; text-align: center; }
+
+/* Article page */
+.article-page { max-width: 860px; }
+.article-page .back-link { margin-bottom: 1.2rem; }
+.article-panel { overflow: hidden; border-radius: var(--radius-lg); animation: rise-in var(--motion-slow) var(--ease-out) both; }
+.article-panel .article-media { aspect-ratio: 16 / 8; }
+.article-panel-body { display: grid; gap: 1rem; padding: clamp(1.2rem, 3vw, 2rem); }
+.article-panel h1 { font-size: clamp(1.5rem, 2.6vw, 2.3rem); font-weight: 720; line-height: 1.2; letter-spacing: -0.035em; }
+.article-panel .article-meta-line { display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; color: var(--muted); font-size: 0.8rem; }
+.article-panel .article-meta-line strong { color: var(--ink); }
+.article-panel .article-lead { color: var(--ink); font-size: 1rem; line-height: 1.7; }
+.article-panel .article-actions { padding-top: 0.4rem; }
+
+/* Sources page */
+.source-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr)); gap: 1rem; }
+.source-row { display: flex; align-items: center; gap: 0.8rem; padding: 0.75rem 0; border-bottom: 1px solid var(--line); font-size: 0.8rem; }
+.source-row:last-child { border-bottom: 0; }
+.source-row > div { display: grid; flex: 1 1 auto; gap: 0.15rem; min-width: 0; }
+.source-row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.source-row small { color: var(--muted); font-size: 0.7rem; }
+.source-row .status-chip.is-error { background: var(--danger-soft); color: var(--danger); }
+.source-row .status-chip.is-waiting { background: var(--surface-raised); color: var(--muted); }
+.source-row a { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: var(--radius-control); color: var(--muted); transition: background var(--motion-fast) var(--ease), color var(--motion-fast) var(--ease); }
+.source-row a:hover { background: var(--surface-raised); color: var(--ink); }
+
+/* Settings: the Nebula Hub section */
+.settings-hub-status { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.8rem; color: var(--ink); font-size: 0.8rem; font-weight: 650; }
+.settings-followed { margin-top: 0.8rem; }
+fieldset.appearance-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
+fieldset.appearance-fields:disabled { opacity: 0.55; }

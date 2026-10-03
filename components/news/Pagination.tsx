@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/Button";
+import { Icon } from "@/lib/nebula-design/Icon";
 
 /** Previous / more links that keep the current filters (search params) of `basePath`. */
 export function Pagination({
@@ -9,6 +9,7 @@ export function Pagination({
   hasMore,
   previousLabel,
   moreLabel,
+  totalLabel,
 }: {
   basePath: string;
   searchParams: Record<string, string | undefined>;
@@ -16,6 +17,7 @@ export function Pagination({
   hasMore: boolean;
   previousLabel: string;
   moreLabel: string;
+  totalLabel: string;
 }) {
   const href = (target: number) => {
     const params = new URLSearchParams(
@@ -26,17 +28,24 @@ export function Pagination({
   };
 
   return (
-    <div className="mt-10 flex items-center justify-center gap-3">
-      {page > 1 && (
-        <Link href={href(page - 1)}>
-          <Button variant="secondary">{previousLabel}</Button>
-        </Link>
-      )}
-      {hasMore && (
-        <Link href={href(page + 1)}>
-          <Button variant="secondary">{moreLabel}</Button>
-        </Link>
-      )}
-    </div>
+    <>
+      {page > 1 || hasMore ? (
+        <nav className="pagination" aria-label={totalLabel}>
+          {page > 1 ? (
+            <Link className="button-link ghost" href={href(page - 1)}>
+              <Icon name="chevronLeft" size={16} />
+              {previousLabel}
+            </Link>
+          ) : null}
+          {hasMore ? (
+            <Link className="button-link ghost" href={href(page + 1)}>
+              {moreLabel}
+              <Icon name="chevronRight" size={16} />
+            </Link>
+          ) : null}
+        </nav>
+      ) : null}
+      <p className="list-total tabular">{totalLabel}</p>
+    </>
   );
 }

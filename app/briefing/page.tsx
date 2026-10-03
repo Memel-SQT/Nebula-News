@@ -2,8 +2,10 @@ import Link from "next/link";
 import { THEME_SLUGS } from "@/types";
 import { getBriefingToday } from "@/lib/articles";
 import { getDictionary, getLocale, translate } from "@/lib/i18n";
-import { PageShell } from "@/components/layout/PageShell";
-import { SectionHeader } from "@/components/layout/SectionHeader";
+import { Icon } from "@/lib/nebula-design/Icon";
+import { PageFrame } from "@/components/shell/PageFrame";
+import { CollectBanner } from "@/components/shell/CollectBanner";
+import { EmptyState } from "@/components/shell/ScreenState";
 import { ArticleGrid } from "@/components/news/ArticleGrid";
 
 export const revalidate = 300;
@@ -12,49 +14,48 @@ export const revalidate = 300;
 export default async function BriefingPage() {
   const locale = await getLocale();
   const dict = getDictionary(locale);
-  const t = (path: string, vars?: Record<string, string | number>) =>
-    translate(dict, path, vars);
+  const t = (path: string, vars?: Record<string, string | number>) => translate(dict, path, vars);
 
   const briefing = await getBriefingToday();
+  const date = new Intl.DateTimeFormat(locale === "en" ? "en-US" : "fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(new Date());
 
   return (
-    <PageShell>
-      <SectionHeader
-        title={t("briefing.title")}
-        subtitle={t("briefing.subtitle", { count: briefing.stories.length })}
-      />
+    <PageFrame
+      eyebrow={date}
+      title={t("briefing.title")}
+      intro={t("briefing.subtitle", { count: briefing.stories.length })}
+    >
+      <CollectBanner dict={dict} locale={locale} />
 
       {briefing.stories.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-nebula-border py-24 text-center text-nebula-text-secondary">
-          {t("briefing.empty")}
-        </div>
+        <EmptyState icon="newspaper" title={t("briefing.emptyTitle")} body={t("briefing.empty")} />
       ) : (
-        <div className="flex flex-col gap-12">
-          {briefing.themes.map((theme) => (
-            <section key={theme} aria-labelledby={`briefing-${theme}`}>
-              <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+        briefing.themes.map((theme) => {
+          const stories = briefing.stories.filter((story) => story.themes.includes(theme));
+          return (
+            <section key={theme} className="briefing-section" aria-labelledby={`briefing-${theme}`}>
+              <div className="section-heading">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-nebula-violet-bright">
-                    {t(`themes.${theme}.app`)}
-                  </p>
-                  <h2 id={`briefing-${theme}`} className="mt-1 text-xl font-bold text-nebula-text">
-                    {t(`themes.${theme}.label`)}
-                  </h2>
+                  <p className="eyebrow">{t(`themes.${theme}.app`)}</p>
+                  <h2 id={`briefing-${theme}`}>{t(`themes.${theme}.label`)}</h2>
                 </div>
-                <Link
-                  href={`/theme/${THEME_SLUGS[theme]}`}
-                  className="text-sm font-medium text-nebula-text-secondary hover:text-nebula-text"
-                >
-                  {t("theme.seeAll")}
-                </Link>
+                <div className="settings-actions">
+                  <span className="pill">{stories.length}</span>
+                  <Link className="button-link ghost small" href={`/theme/${THEME_SLUGS[theme]}`}>
+                    {t("themePage.seeAll")}
+                    <Icon name="chevronRight" size={14} />
+                  </Link>
+                </div>
               </div>
-              <ArticleGrid
-                articles={briefing.stories.filter((story) => story.themes.includes(theme))}
-              />
+              <ArticleGrid articles={stories} empty={{ title: t("themePage.emptyTitle"), body: t("themePage.empty") }} />
             </section>
-          ))}
-        </div>
+          );
+        })
       )}
-    </PageShell>
+    </PageFrame>
   );
 }

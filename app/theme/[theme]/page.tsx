@@ -2,8 +2,8 @@ import { notFound } from "next/navigation";
 import { themeOfSlug, type Language } from "@/types";
 import { getArticles } from "@/lib/articles";
 import { getDictionary, getLocale, translate } from "@/lib/i18n";
-import { PageShell } from "@/components/layout/PageShell";
-import { SectionHeader } from "@/components/layout/SectionHeader";
+import { PageFrame } from "@/components/shell/PageFrame";
+import { CollectBanner } from "@/components/shell/CollectBanner";
 import { FilterBar } from "@/components/filters/FilterBar";
 import { ArticleGrid } from "@/components/news/ArticleGrid";
 import { Pagination } from "@/components/news/Pagination";
@@ -21,8 +21,7 @@ export default async function ThemePage(props: {
 
   const locale = await getLocale();
   const dict = getDictionary(locale);
-  const t = (path: string, vars?: Record<string, string | number>) =>
-    translate(dict, path, vars);
+  const t = (path: string, vars?: Record<string, string | number>) => translate(dict, path, vars);
 
   const page = Math.max(1, Number(searchParams.page) || 1);
   const { items, hasMore, total } = await getArticles({
@@ -33,15 +32,16 @@ export default async function ThemePage(props: {
   });
 
   return (
-    <PageShell>
-      <SectionHeader
-        title={t(`themes.${theme}.label`)}
-        subtitle={t(`themes.${theme}.description`)}
-      />
+    <PageFrame
+      eyebrow={t(`themes.${theme}.app`)}
+      title={t(`themes.${theme}.label`)}
+      intro={t(`themes.${theme}.description`)}
+    >
+      <CollectBanner dict={dict} locale={locale} />
 
       <FilterBar showThemes={false} />
 
-      <ArticleGrid articles={items} />
+      <ArticleGrid articles={items} empty={{ title: t("themePage.emptyTitle"), body: t("themePage.empty") }} />
 
       <Pagination
         basePath={`/theme/${slug}`}
@@ -50,11 +50,8 @@ export default async function ThemePage(props: {
         hasMore={hasMore}
         previousLabel={t("home.previous")}
         moreLabel={t("home.loadMore")}
+        totalLabel={t("home.total", { count: total })}
       />
-
-      <p className="mt-6 text-center text-xs text-nebula-text-secondary">
-        {t("home.total", { count: total })}
-      </p>
-    </PageShell>
+    </PageFrame>
   );
 }

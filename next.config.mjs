@@ -1,3 +1,7 @@
+import { readFileSync } from "node:fs";
+
+const { version } = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8"));
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Self-contained server bundle: what the Electron desktop build spawns as
@@ -5,6 +9,8 @@ const nextConfig = {
   // self-host outside Vercel. Harmless for Vercel deployments — Vercel uses
   // its own build output regardless of this setting.
   output: "standalone",
+  // Shown in the sidebar footer ("Version x.y.z"), as in every app of the family.
+  env: { NEXT_PUBLIC_APP_VERSION: version },
   images: {
     remotePatterns: [{ protocol: "https", hostname: "**" }],
     // No image-optimization server/sharp binary to carry around in a

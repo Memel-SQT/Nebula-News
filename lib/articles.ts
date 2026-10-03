@@ -1,7 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { computeImportance } from "@/lib/processing/score";
-import { interleaveByTheme, themesOf, themesWithStories } from "@/lib/themes";
+import { HALF_LIFE_HOURS, interleaveByTheme, themesOf, themesWithStories } from "@/lib/themes";
 import {
   THEME_KEYS,
   type ArticleCard,
@@ -9,6 +9,7 @@ import {
   type BriefingResponse,
   type Language,
   type Region,
+  type ThemeKey,
 } from "@/types";
 
 const cardSelect = {
@@ -135,13 +136,18 @@ export async function getBriefingToday(): Promise<BriefingResponse> {
   });
 
   const stories = interleaveByTheme(
-    items.map((item) => ({
-      ...toCard(item),
-      importanceScore: computeImportance({
-        sourceWeight: item.source.weight,
-        publishedAt: item.publishedAt,
-      }),
-    }))
+    items.map((item) => {
+      const card = toCard(item);
+      const theme = card.themes[0];
+      return {
+        ...card,
+        importanceScore: computeImportance({
+          sourceWeight: item.source.weight,
+          publishedAt: item.publishedAt,
+          halfLifeHours: theme ? HALF_LIFE_HOURS[theme] : undefined,
+        }),
+      };
+    })
   );
 
   return {
@@ -149,4 +155,16 @@ export async function getBriefingToday(): Promise<BriefingResponse> {
     themes: themesWithStories(stories),
     stories,
   };
+}
+
+/** How many visible articles each theme has (home page cards). */
+export async function getThemeCounts(): Promise<Record<ThemeKey, number>> {
+  const counts = await Promise.all(
+    THEME_KEYS.map((theme) =>
+      db.article.count({
+        where: { source: { active: true }, categories: { some: { category: { key: theme } } } },
+      })
+    )
+  );
+  return Object.fromEntries(THEME_KEYS.map((theme, index) => [theme, counts[index]])) as Record<ThemeKey, number>;
 }

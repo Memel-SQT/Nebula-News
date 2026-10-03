@@ -1,56 +1,58 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import type { ArticleCard } from "@/types";
+import { Icon } from "@/lib/nebula-design/Icon";
 import { useI18n } from "@/lib/i18n/client";
-import { Card } from "@/components/ui/Card";
-import { ThemeTag } from "@/components/news/Tag";
+import { THEME_ICONS } from "@/lib/navigation";
 import { timeAgo } from "@/lib/utils";
+
+/** The 16:9 media slot: the image, or a theme tile when there is none or it fails to load
+ *  (the slot keeps its size either way, so the grid never shifts). */
+export function ArticleMedia({ article, eager = false }: { article: ArticleCard; eager?: boolean }) {
+  const [failed, setFailed] = useState(false);
+  const theme = article.themes[0];
+  return (
+    <div className="article-media">
+      {article.imageUrl && !failed ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={article.imageUrl} alt="" loading={eager ? "eager" : "lazy"} onError={() => setFailed(true)} />
+      ) : (
+        <div className="article-media-fallback" aria-hidden="true">
+          <span><Icon name={theme ? THEME_ICONS[theme] : "newspaper"} size={22} /></span>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function NewsCard({ article }: { article: ArticleCard }) {
   const { t, locale } = useI18n();
+  const theme = article.themes[0];
 
   return (
-    <Card className="group flex h-full flex-col overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:border-nebula-violet/60 hover:shadow-[0_20px_45px_-24px_rgba(139,92,246,0.55)]">
-      <Link href={`/article/${article.id}`} className="flex h-full flex-col">
-        {article.imageUrl ? (
-          <div className="aspect-[16/9] w-full overflow-hidden bg-nebula-card-alt">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={article.imageUrl}
-              alt=""
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-              loading="lazy"
-              onError={(e) => {
-                (e.currentTarget.parentElement as HTMLElement).style.display = "none";
-              }}
-            />
-          </div>
-        ) : null}
-
-        <div className="flex flex-1 flex-col gap-3 p-5">
-          <div className="flex flex-wrap items-center gap-1.5">
-            {article.themes.map((theme) => (
-              <ThemeTag key={theme} theme={theme} />
-            ))}
-          </div>
-
-          <h3 className="text-base font-bold leading-snug text-nebula-text group-hover:text-white">
-            {article.title}
-          </h3>
-
-          {article.summary && (
-            <p className="line-clamp-3 flex-1 text-sm leading-relaxed text-nebula-text-secondary">
-              {article.summary}
-            </p>
-          )}
-
-          <div className="mt-auto flex items-center justify-between pt-2 text-xs text-nebula-text-secondary">
-            <span className="font-medium">{article.source.name}</span>
-            <span>{timeAgo(new Date(article.publishedAt), locale)}</span>
+    <article className="article-card">
+      <Link href={`/article/${article.id}`}>
+        <ArticleMedia article={article} />
+        <div className="article-body">
+          {theme ? (
+            <span className="theme-chip">
+              <Icon name={THEME_ICONS[theme]} size={12} />
+              {t(`themes.${theme}.label`)}
+            </span>
+          ) : null}
+          <h3>{article.title}</h3>
+          {article.summary ? <p className="article-summary">{article.summary}</p> : null}
+          <div className="article-meta">
+            <strong title={article.source.name}>{article.source.name}</strong>
+            {/* Relative to "now", which moves between the server render and hydration. */}
+            <time dateTime={article.publishedAt} suppressHydrationWarning>
+              {timeAgo(new Date(article.publishedAt), locale)}
+            </time>
           </div>
         </div>
       </Link>
-    </Card>
+    </article>
   );
 }
