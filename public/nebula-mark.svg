@@ -1,12 +1,21 @@
-<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="nebula-news-title">
+  <title id="nebula-news-title">Nebula News</title>
+  <!-- Nebula News mark, on the family rules (nebula-design-system, direction-artistique.md §6):
+       #12121F plate at rx = 30/128 with the violet halo, #4C6EF5 -> #A855F7 gradient, inner
+       margin of 23/128 or more. The three columns of a newspaper page, as in the original mark. -->
   <defs>
-    <linearGradient id="nebulaMark" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#4C6EF5"/>
+    <linearGradient id="nebula-news-gradient" x1="16" y1="16" x2="112" y2="112" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4C6EF5"/>
       <stop offset="1" stop-color="#A855F7"/>
     </linearGradient>
+    <radialGradient id="nebula-news-halo" cx="0.5" cy="0.32" r="0.78">
+      <stop stop-color="#8B5CF6" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#8B5CF6" stop-opacity="0"/>
+    </radialGradient>
   </defs>
-  <rect width="100" height="100" rx="24" fill="#1A1A2E"/>
-  <rect x="22" y="18" width="18" height="64" rx="6" fill="url(#nebulaMark)"/>
-  <rect x="60" y="18" width="18" height="64" rx="6" fill="url(#nebulaMark)" opacity="0.55"/>
-  <polygon points="40,18 60,18 60,82 40,82" fill="url(#nebulaMark)" opacity="0.85"/>
+  <rect width="128" height="128" rx="30" fill="#12121F"/>
+  <rect width="128" height="128" rx="30" fill="url(#nebula-news-halo)"/>
+  <rect x="28" y="23" width="23" height="82" rx="7.5" fill="url(#nebula-news-gradient)"/>
+  <rect x="51" y="23" width="26" height="82" fill="url(#nebula-news-gradient)" opacity="0.85"/>
+  <rect x="77" y="23" width="23" height="82" rx="7.5" fill="url(#nebula-news-gradient)" opacity="0.55"/>
 </svg>

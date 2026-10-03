@@ -1,0 +1,94 @@
+/* Ported from Nebula Hub 05204fd (src/renderer/styles/app.css). */
+/* Nebula Hub layout. Shell, topbar and settings panel follow Nebula Finterest v0.1.36
+   styles.css so the two apps are indistinguishable at component level; the sidebar is in
+   sidebar.css. */
+
+/* Above the animated background. Not the splash: it is `position: fixed` over the whole window
+   (this rule used to make it a relative block stuck to the top). */
+.app-shell { position: relative; z-index: 1; }
+
+.app-shell { min-height: 100vh; display: grid; grid-template-columns: var(--sidebar-width, 284px) minmax(0, 1fr); }
+.workspace-column { min-width: 0; }
+
+/* Workspace */
+.workspace { width: 100%; min-width: 0; padding: clamp(1.5rem, 4vw, 4rem) clamp(1rem, 5vw, 5rem) 5rem; animation: page-fade-in var(--motion-base) var(--ease-out) both; }
+.topbar { display: flex; align-items: end; justify-content: space-between; gap: 2rem; margin: 0 0 2.5rem; animation: rise-in var(--motion-slow) var(--ease-out) both; }
+.topbar h1 { max-width: 850px; margin: 0; font-size: clamp(1.8rem, 3.3vw, 3.2rem); font-weight: 720; letter-spacing: -0.045em; outline: none; }
+.topbar-intro { max-width: 640px; margin: 0.8rem 0 0; color: var(--muted); font-size: 0.86rem; }
+.topbar-actions { display: flex; flex: 0 0 auto; flex-wrap: wrap; gap: 0.6rem; max-width: 100%; }
+.eyebrow { margin: 0 0 0.5rem; color: var(--accent-hover); font-size: 0.65rem; font-weight: 800; letter-spacing: 0.17em; text-transform: uppercase; }
+
+/* Centered content column (user feedback: wide and ultrawide screens). It grows with the screen
+   so a 3440 px window is used, but lines never get too long to read. */
+.workspace { --content-max: 1480px; }
+.workspace-inner { width: 100%; max-width: var(--content-max); margin-inline: auto; }
+@media (min-width: 1900px) { .workspace { --content-max: 1680px; } }
+@media (min-width: 2400px) { .workspace { --content-max: 1960px; } }
+@media (min-width: 3000px) { .workspace { --content-max: 2280px; } }
+/* Very large screens at 100 % scaling: text and controls scale up a little, everything in rem follows. */
+@media (min-width: 2400px) { html { font-size: 17px; } }
+@media (min-width: 3000px) { html { font-size: 18px; } }
+
+/* States: skeleton, empty, offline, error */
+.skeleton-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
+.skeleton-card { display: grid; gap: 0.8rem; padding: 1.3rem; border-radius: var(--radius-lg); }
+.skeleton { position: relative; display: block; overflow: hidden; border-radius: 8px; background: var(--surface-raised); }
+.skeleton::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--ink) 8%, transparent), transparent); transform: translateX(-100%); animation: skeleton-shimmer 1.4s var(--ease) infinite; }
+.skeleton-icon { width: 3rem; height: 3rem; border-radius: 14px; }
+.skeleton-line { height: 0.8rem; }
+.skeleton-line.short { width: 60%; }
+
+.empty-state { display: grid; justify-items: center; gap: 0.6rem; max-width: 620px; margin: 0 auto; padding: 2.6rem 2rem; text-align: center; animation: card-fade-in var(--motion-slow) var(--ease-out) both; }
+.empty-state-icon { display: grid; place-items: center; width: 3.6rem; height: 3.6rem; margin-bottom: 0.4rem; border-radius: 18px; background: var(--accent-soft); color: var(--accent-hover); }
+.empty-state h2 { margin: 0; font-size: 1.15rem; }
+.empty-state p { max-width: 460px; margin: 0 0 0.8rem; color: var(--muted); font-size: 0.85rem; line-height: 1.6; }
+
+.state-banner { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1.1rem; padding: 0.9rem 1rem; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface-raised); color: var(--ink); font-size: 0.8rem; animation: banner-in var(--motion-base) var(--ease-out) both; }
+.state-banner > div { display: grid; flex: 1 1 auto; gap: 0.15rem; }
+.state-banner span { color: var(--muted); }
+.offline-banner .icon { color: var(--warning); }
+.error-banner { border-color: var(--danger-soft); background: var(--danger-soft); }
+.error-banner .icon, .error-banner strong { color: var(--danger); }
+.workspace-column > .error-banner { margin: 1.2rem clamp(1rem, 5vw, 5rem) 0; }
+
+/* Settings */
+.settings-panel { max-width: 1080px; padding: 1.6rem; animation: rise-in var(--motion-slow) var(--ease-out) both; }
+.settings-section { margin-top: 1.3rem; padding-top: 1.2rem; border-top: 1px solid var(--line); }
+.settings-section:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+.settings-section h2 { display: flex; align-items: center; gap: 0.45rem; margin: 0 0 0.7rem; color: var(--muted); font-size: 0.68rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
+.settings-label { margin: 1rem 0 0.5rem; color: var(--ink); font-size: 0.74rem; font-weight: 700; }
+.settings-copy { margin: 0; color: var(--muted); font-size: 0.82rem; line-height: 1.6; }
+.settings-fields { display: flex; flex-wrap: wrap; gap: 1.2rem; }
+.settings-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.7rem; }
+.settings-reset { margin-top: 0.9rem; }
+.path-note.settings-hint { display: flex; align-items: center; gap: 0.4rem; }
+.path-note { display: block; margin-top: 0.6rem; color: var(--muted); font-size: 0.68rem; word-break: break-word; }
+.sound-row { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+/* Nebula Hub update (ADR-029). */
+.hub-update-panel .progress-track { max-width: 440px; margin: 0.2rem 0 0.4rem; }
+
+/* Compact mode: windows narrower than 1100 px (small screens, 125–150 % scaling, half-screen).
+   The sidebar becomes an icon rail (sidebar.css); the top padding always clears the 36 px
+   window controls. */
+@media (max-width: 1100px) {
+  .workspace { padding: 3rem 1.6rem 3rem; }
+  .workspace-column > .error-banner { margin-inline: 1.6rem; }
+  .topbar { gap: 1.2rem; margin-bottom: 1.6rem; }
+}
+
+/* Low windows: less vertical air, so a screen fits without scrolling as much. */
+@media (max-height: 760px) {
+  .workspace { padding-top: 2.6rem; padding-bottom: 2.5rem; }
+  .topbar { margin-bottom: 1.4rem; }
+  .topbar h1 { font-size: clamp(1.6rem, 2.6vw, 2.4rem); }
+}
+
+/* Very narrow windows: the navigation moves to a bar at the top. */
+@media (max-width: 720px) {
+  .workspace { padding: 1.4rem 1rem 2.5rem; }
+  .topbar { align-items: start; flex-direction: column; gap: 1rem; }
+}
+
+/* Page titles receive focus programmatically after each navigation (screen readers land on
+   them); they are not interactive, so no focus ring. */
+.topbar h1:focus { outline: none; }
