@@ -13,14 +13,39 @@ export type NormalizedArticle = {
   imageUrl: string | null;
 };
 
-/** Strips HTML tags/entities from RSS content so summarizers work on plain text. */
-function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&#39;|&rsquo;/g, "'")
-    .replace(/&quot;/g, '"')
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: " ",
+  rsquo: "’",
+  lsquo: "‘",
+  rdquo: "”",
+  ldquo: "“",
+  laquo: "«",
+  raquo: "»",
+  hellip: "…",
+  ndash: "–",
+  mdash: "—",
+  euro: "€",
+};
+
+/** Decodes numeric (`&#8217;`, `&#x2019;`) and common named entities; unknown ones stay. */
+export function decodeEntities(text: string): string {
+  return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match, code: string) => {
+    if (code[0] === "#") {
+      const point = code[1] === "x" || code[1] === "X" ? parseInt(code.slice(2), 16) : parseInt(code.slice(1), 10);
+      return Number.isFinite(point) && point > 0 && point <= 0x10ffff ? String.fromCodePoint(point) : match;
+    }
+    return NAMED_ENTITIES[code.toLowerCase()] ?? match;
+  });
+}
+
+/** Strips HTML tags and decodes entities from RSS content so summarizers work on plain text. */
+export function stripHtml(html: string): string {
+  return decodeEntities(html.replace(/<[^>]+>/g, " "))
     .replace(/\s+/g, " ")
     .trim();
 }

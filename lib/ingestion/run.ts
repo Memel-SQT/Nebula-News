@@ -4,7 +4,7 @@ import { fetchFeed } from "./fetchFeeds";
 import { normalizeItem } from "./normalize";
 import { summarizeArticle } from "@/lib/processing/summarize";
 import { computeImportance } from "@/lib/processing/score";
-import { BRIEFING_WINDOW_DAYS, pickBriefing, themesOf } from "@/lib/themes";
+import { BRIEFING_WINDOW_DAYS, HALF_LIFE_HOURS, pickBriefing, themesOf } from "@/lib/themes";
 import { THEME_KEYS } from "@/types";
 
 export type IngestionSummary = {
@@ -85,6 +85,7 @@ export async function runIngestion(): Promise<IngestionSummary> {
         const importanceScore = computeImportance({
           sourceWeight: sourceConfig.weight,
           publishedAt: normalized.publishedAt,
+          halfLifeHours: HALF_LIFE_HOURS[sourceConfig.theme],
         });
 
         await db.article.create({
@@ -175,6 +176,7 @@ async function markBriefingPicks() {
       const importanceScore = computeImportance({
         sourceWeight: article.source.weight,
         publishedAt: article.publishedAt,
+        halfLifeHours: HALF_LIFE_HOURS[theme],
       });
       return [{ id: article.id, sourceId: article.sourceId, theme, importanceScore }];
     })

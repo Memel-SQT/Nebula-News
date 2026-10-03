@@ -36,7 +36,7 @@ export const SOURCES: SourceConfig[] = [
     region: "FRANCE",
     language: "FR",
     theme: "FOCUS",
-    weight: 1.0,
+    weight: 0.8,
   },
   {
     name: "Olivier Roland",
@@ -91,15 +91,6 @@ export const SOURCES: SourceConfig[] = [
     language: "EN",
     theme: "FOCUS",
     weight: 1.0,
-  },
-  {
-    name: "Psyche",
-    feedUrl: "https://psyche.co/feed",
-    websiteUrl: "https://psyche.co",
-    region: "ANGLOSAXON",
-    language: "EN",
-    theme: "FOCUS",
-    weight: 0.8,
   },
   {
     name: "Greater Good (UC Berkeley)",

@@ -61,3 +61,16 @@ test("the briefing lists only the themes that have stories, in the family order"
   assert.deepEqual(themesWithStories([{ themes: ["TECH"] }, { themes: ["FOCUS"] }]), ["FOCUS", "TECH"]);
   assert.deepEqual(themesWithStories([]), []);
 });
+
+test("an article loses half its score after its theme's half-life", async () => {
+  const { computeImportance } = await import("./processing/score");
+  const { HALF_LIFE_HOURS } = await import("./themes");
+  const hoursAgo = (hours: number) => new Date(Date.now() - hours * 36e5);
+  for (const theme of THEME_KEYS) {
+    const fresh = computeImportance({ sourceWeight: 1, publishedAt: new Date(), halfLifeHours: HALF_LIFE_HOURS[theme] });
+    const old = computeImportance({ sourceWeight: 1, publishedAt: hoursAgo(HALF_LIFE_HOURS[theme]), halfLifeHours: HALF_LIFE_HOURS[theme] });
+    assert.ok(Math.abs(old - fresh / 2) < 0.1, theme);
+  }
+  // Long-lasting themes keep their articles longer than tech news.
+  assert.ok(HALF_LIFE_HOURS.FOCUS > HALF_LIFE_HOURS.FINANCE && HALF_LIFE_HOURS.FINANCE > HALF_LIFE_HOURS.TECH);
+});

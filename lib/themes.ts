@@ -13,6 +13,16 @@ export function themesOf(keys: readonly string[]): ThemeKey[] {
   return THEME_KEYS.filter((theme) => keys.includes(theme));
 }
 
+/**
+ * Recency half-life of each theme, in hours. Personal-growth and finance articles stay
+ * relevant for days (weekly blogs must not be buried by daily outlets); tech news ages fast.
+ */
+export const HALF_LIFE_HOURS: Record<ThemeKey, number> = {
+  FOCUS: 96,
+  FINANCE: 48,
+  TECH: 18,
+};
+
 /** At most this many stories of one source in one theme of the briefing. */
 export const BRIEFING_PER_SOURCE = 2;
 
