@@ -1,12 +1,12 @@
 import { PrismaClient } from "@prisma/client";
 import { SOURCES } from "../lib/sources/config";
-import { CATEGORY_KEYS } from "../types";
+import { THEME_KEYS } from "../types";
 
 const db = new PrismaClient();
 
 async function main() {
-  console.log(`Seeding ${CATEGORY_KEYS.length} categories...`);
-  for (const key of CATEGORY_KEYS) {
+  console.log(`Seeding ${THEME_KEYS.length} themes...`);
+  for (const key of THEME_KEYS) {
     await db.category.upsert({
       where: { key },
       update: {},
@@ -24,6 +24,7 @@ async function main() {
         region: source.region,
         language: source.language,
         weight: source.weight,
+        active: true,
       },
       create: {
         name: source.name,
@@ -35,6 +36,12 @@ async function main() {
       },
     });
   }
+
+  // A source dropped from the configuration is retired, not deleted (its articles stay).
+  await db.source.updateMany({
+    where: { feedUrl: { notIn: SOURCES.map((source) => source.feedUrl) } },
+    data: { active: false },
+  });
 
   console.log("Seed complete. Run `npm run ingest` to fetch the first batch of articles.");
 }

@@ -1,0 +1,34 @@
+/* Bridge between the two token vocabularies of the family, so both can be used unchanged:
+   - @nebula/design (styles/nebula/tokens.css, ported from Nebula Hub) holds the values and the
+     four themes, and is what the appearance model (accentVariables) writes to;
+   - the nebula-design-system Tailwind preset (lib/nebula-design/tailwind-preset.ts) reads
+     tokens.css names (--bg-base, --card, --text…).
+   Every name below only points at an @nebula/design variable: no value is defined here.
+   Note: --radius-lg keeps its @nebula/design meaning (18 px panels), so the preset's
+   `rounded-lg` and `rounded-xl` both give 18 px; cards use the .card classes (news.css). */
+:root {
+  --bg-base: var(--page);
+  --bg-surface: var(--sidebar);
+  --card: var(--surface);
+  --card-alt: var(--surface-raised);
+  --border: var(--line);
+  --text: var(--ink);
+  --text-secondary: var(--muted);
+  --blue: var(--gold);
+  --blue-bright: var(--gold-bright);
+  --violet: var(--accent);
+  --violet-bright: var(--accent-hover);
+  --accent-from: var(--gold);
+  --accent-to: var(--accent);
+  --success: var(--positive);
+  --radius-sm: var(--radius-control);
+  --radius-md: var(--radius);
+  --radius-xl: var(--radius-lg);
+  --radius-pill: 999px;
+  --shadow-card: var(--shadow);
+  --shadow-glow: 0 10px 26px -12px var(--accent-glow);
+  --ring-soft: inset 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);
+  --ring-strong: inset 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+  --font-sans: 'Aptos', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Cascadia Mono', ui-monospace, monospace;
+}

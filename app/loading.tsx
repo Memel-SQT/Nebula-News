@@ -1,12 +1,13 @@
-export default function Loading() {
+import { getDictionary, getLocale, translate } from "@/lib/i18n";
+import { Skeleton } from "@/components/shell/ScreenState";
+
+export default async function Loading() {
+  const dict = getDictionary(await getLocale());
   return (
-    <div className="mx-auto grid max-w-7xl grid-cols-1 gap-5 px-4 py-10 sm:grid-cols-2 sm:px-6 lg:grid-cols-3 lg:px-8 xl:grid-cols-4">
-      {Array.from({ length: 8 }).map((_, i) => (
-        <div
-          key={i}
-          className="h-72 animate-pulse rounded-2xl border border-nebula-border bg-nebula-card"
-        />
-      ))}
-    </div>
+    <main className="workspace">
+      <div className="workspace-inner">
+        <Skeleton count={6} label={translate(dict, "state.loading")} />
+      </div>
+    </main>
   );
 }

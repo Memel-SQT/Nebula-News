@@ -2,23 +2,25 @@
 
 import { useCallback, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import type { CategoryKey, Language, Region } from "@/types";
+import { THEME_KEYS, isThemeKey, type Language } from "@/types";
+import { Icon } from "@/lib/nebula-design/Icon";
 import { useI18n } from "@/lib/i18n/client";
-import { RegionFilter } from "./RegionFilter";
-import { CategoryChips } from "./CategoryChips";
+import { THEME_ICONS } from "@/lib/navigation";
 
-const LANGUAGES: Language[] = ["FR", "EN"];
+const LANGUAGES: Array<Language | null> = [null, "FR", "EN"];
 
-export function FilterBar() {
+/** Search, article language and (on the home page) theme filters, kept in the URL. */
+export function FilterBar({ showThemes = true }: { showThemes?: boolean }) {
   const { t } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
 
-  const region = searchParams.get("region") as Region | null;
-  const language = searchParams.get("language") as Language | null;
-  const category = searchParams.get("category") as CategoryKey | null;
+  const languageParam = searchParams.get("language");
+  const language = languageParam === "FR" || languageParam === "EN" ? languageParam : null;
+  const themeParam = searchParams.get("theme");
+  const theme = isThemeKey(themeParam) ? themeParam : null;
   const q = searchParams.get("q") ?? "";
 
   const updateParam = useCallback(
@@ -26,53 +28,70 @@ export function FilterBar() {
       const params = new URLSearchParams(searchParams.toString());
       if (value) params.set(key, value);
       else params.delete(key);
+      params.delete("page");
       startTransition(() => router.push(`${pathname}?${params.toString()}`));
     },
     [pathname, router, searchParams, startTransition]
   );
 
   return (
-    <div className="mb-8 flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="filter-bar">
+      <label className="search-field">
+        <Icon name="search" size={16} />
+        <span className="visually-hidden">{t("filters.searchLabel")}</span>
         <input
+          type="search"
           defaultValue={q}
           onKeyDown={(e) => {
             if (e.key === "Enter") updateParam("q", e.currentTarget.value || null);
           }}
-          onBlur={(e) => updateParam("q", e.currentTarget.value || null)}
+          onBlur={(e) => {
+            if (e.currentTarget.value !== q) updateParam("q", e.currentTarget.value || null);
+          }}
           placeholder={t("filters.search")}
-          className="w-full max-w-xs rounded-lg border border-nebula-border bg-nebula-card px-4 py-2.5 text-sm text-nebula-text placeholder:text-nebula-text-secondary focus:border-nebula-violet focus:outline-none"
         />
+      </label>
 
-        <RegionFilter value={region} onChange={(r) => updateParam("region", r)} />
-
-        <select
-          value={language ?? ""}
-          onChange={(e) => updateParam("language", e.target.value || null)}
-          className="rounded-lg border border-nebula-border bg-nebula-card px-3 py-2.5 text-sm text-nebula-text focus:border-nebula-violet focus:outline-none"
-        >
-          <option value="">{t("filters.allLanguages")}</option>
-          {LANGUAGES.map((l) => (
-            <option key={l} value={l}>
-              {t(`languages.${l}`)}
-            </option>
-          ))}
-        </select>
-
-        {(region || language || category || q) && (
+      <div className="segmented" role="radiogroup" aria-label={t("filters.languageLabel")}>
+        {LANGUAGES.map((value) => (
           <button
-            onClick={() => router.push(pathname)}
-            className="text-sm font-medium text-nebula-text-secondary underline-offset-4 hover:text-nebula-text hover:underline"
+            key={value ?? "all"}
+            type="button"
+            role="radio"
+            aria-checked={language === value}
+            className={language === value ? "active" : ""}
+            data-sound="toggle"
+            onClick={() => updateParam("language", value)}
           >
-            {t("filters.clear")}
+            {value ? t(`languages.${value}`) : t("filters.allLanguages")}
           </button>
-        )}
+        ))}
       </div>
 
-      <CategoryChips
-        value={category}
-        onChange={(c) => updateParam("category", c)}
-      />
+      {showThemes ? (
+        <div className="filter-chips" role="group" aria-label={t("nav.group.themes")}>
+          {THEME_KEYS.map((key) => (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={theme === key}
+              className={`filter-chip ${theme === key ? "active" : ""}`}
+              data-sound="toggle"
+              onClick={() => updateParam("theme", theme === key ? null : key)}
+            >
+              <Icon name={THEME_ICONS[key]} size={14} />
+              {t(`themes.${key}.label`)}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {language || theme || q ? (
+        <button type="button" className="ghost small filter-clear" onClick={() => router.push(pathname)}>
+          <Icon name="refresh" size={14} />
+          {t("filters.clear")}
+        </button>
+      ) : null}
     </div>
   );
 }

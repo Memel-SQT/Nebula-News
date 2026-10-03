@@ -1,4 +1,4 @@
-import type { Language, Region } from "@/types";
+import type { Language, Region, ThemeKey } from "@/types";
 
 export type SourceConfig = {
   name: string;
@@ -6,134 +6,285 @@ export type SourceConfig = {
   websiteUrl: string;
   region: Region;
   language: Language;
-  /** Editorial weight used by the importance scorer; wire services and
-   *  flagship outlets sit higher. Keep this list append-only and easy to
-   *  extend — adding a source is just adding an entry here, then re-running
-   *  `npm run seed`. */
+  /** The theme every article of this feed belongs to (one feed, one theme: far more reliable
+   *  than guessing from keywords). */
+  theme: ThemeKey;
+  /** Editorial weight used by the importance scorer; reference outlets sit higher. Adding a
+   *  source is just adding an entry here — the next ingestion picks it up, and a source
+   *  removed from this list is marked inactive (its articles are hidden, not deleted). */
   weight: number;
 };
 
+// Every feed below was checked on 2026-10-02 with the ingestion's own parser (rss-parser,
+// NebulaNewsBot user agent): it answers, parses, and published recently. Outlets that block
+// bots (Les Échos, Capital, Investopedia, Morningstar…) are left out on purpose.
 export const SOURCES: SourceConfig[] = [
-  // --- France / French-speaking Europe -------------------------------
+  // --- Personal growth & life organization (Nebula Clock) ----------------
   {
-    name: "Agence France-Presse (AFP)",
-    feedUrl: "https://www.france24.com/fr/rss",
-    websiteUrl: "https://www.france24.com",
+    name: "Cerveau & Psycho",
+    feedUrl: "https://www.cerveauetpsycho.fr/rss.xml",
+    websiteUrl: "https://www.cerveauetpsycho.fr",
     region: "FRANCE",
     language: "FR",
-    weight: 1.3,
+    theme: "FOCUS",
+    weight: 1.1,
   },
   {
-    name: "Le Monde — International",
-    feedUrl: "https://www.lemonde.fr/international/rss_full.xml",
-    websiteUrl: "https://www.lemonde.fr",
+    name: "Psychologies — Moi",
+    feedUrl: "https://www.psychologies.com/Moi/rss",
+    websiteUrl: "https://www.psychologies.com",
     region: "FRANCE",
     language: "FR",
+    theme: "FOCUS",
+    weight: 0.8,
+  },
+  {
+    name: "Olivier Roland",
+    feedUrl: "https://www.olivier-roland.fr/feed",
+    websiteUrl: "https://www.olivier-roland.fr",
+    region: "FRANCE",
+    language: "FR",
+    theme: "FOCUS",
+    weight: 0.9,
+  },
+  {
+    name: "Habitudes Zen",
+    feedUrl: "https://habitudes-zen.net/feed/",
+    websiteUrl: "https://habitudes-zen.net",
+    region: "FRANCE",
+    language: "FR",
+    theme: "FOCUS",
+    weight: 0.9,
+  },
+  {
+    name: "Cal Newport",
+    feedUrl: "https://calnewport.com/feed/",
+    websiteUrl: "https://calnewport.com",
+    region: "NORTH_AMERICA",
+    language: "EN",
+    theme: "FOCUS",
     weight: 1.2,
   },
   {
-    name: "Radio France Internationale (RFI)",
-    feedUrl: "https://www.rfi.fr/fr/rss",
-    websiteUrl: "https://www.rfi.fr",
-    region: "FRANCE",
-    language: "FR",
-    weight: 1.1,
-  },
-  {
-    name: "Le Figaro — International",
-    feedUrl: "https://www.lefigaro.fr/rss/figaro_international.xml",
-    websiteUrl: "https://www.lefigaro.fr",
-    region: "FRANCE",
-    language: "FR",
-    weight: 1.0,
-  },
-  {
-    name: "RTS Info (Suisse)",
-    feedUrl: "https://www.rts.ch/info/monde/rss.xml",
-    websiteUrl: "https://www.rts.ch",
-    region: "FRANCE",
-    language: "FR",
-    weight: 0.9,
-  },
-
-  // --- North America ---------------------------------------------------
-  {
-    // Reuters discontinued its public RSS feeds; PBS NewsHour is a
-    // comparably neutral, wire-service-adjacent US source that still
-    // publishes one.
-    name: "PBS NewsHour",
-    feedUrl: "https://www.pbs.org/newshour/feeds/rss/headlines",
-    websiteUrl: "https://www.pbs.org/newshour",
+    name: "Farnam Street",
+    feedUrl: "https://fs.blog/feed/",
+    websiteUrl: "https://fs.blog",
     region: "NORTH_AMERICA",
     language: "EN",
-    weight: 1.3,
-  },
-  {
-    name: "Associated Press — Top News",
-    feedUrl: "https://rsshub.app/apnews/topics/ap-top-news",
-    websiteUrl: "https://apnews.com",
-    region: "NORTH_AMERICA",
-    language: "EN",
-    weight: 1.3,
-  },
-  {
-    name: "NPR — World",
-    feedUrl: "https://feeds.npr.org/1004/rss.xml",
-    websiteUrl: "https://www.npr.org",
-    region: "NORTH_AMERICA",
-    language: "EN",
-    weight: 1.1,
-  },
-  {
-    name: "CBC News — World",
-    feedUrl: "https://www.cbc.ca/webfeed/rss/rss-world",
-    websiteUrl: "https://www.cbc.ca",
-    region: "NORTH_AMERICA",
-    language: "EN",
-    weight: 1.0,
-  },
-
-  // --- UK / Anglo-Saxon --------------------------------------------------
-  {
-    name: "BBC News — World",
-    feedUrl: "http://feeds.bbci.co.uk/news/world/rss.xml",
-    websiteUrl: "https://www.bbc.com/news",
-    region: "ANGLOSAXON",
-    language: "EN",
-    weight: 1.4,
-  },
-  {
-    name: "The Guardian — World",
-    feedUrl: "https://www.theguardian.com/world/rss",
-    websiteUrl: "https://www.theguardian.com",
-    region: "ANGLOSAXON",
-    language: "EN",
+    theme: "FOCUS",
     weight: 1.2,
   },
   {
-    name: "The Independent — World",
-    feedUrl: "https://www.independent.co.uk/news/world/rss",
-    websiteUrl: "https://www.independent.co.uk",
+    name: "Scott H Young",
+    feedUrl: "https://www.scotthyoung.com/blog/feed/",
+    websiteUrl: "https://www.scotthyoung.com",
+    region: "NORTH_AMERICA",
+    language: "EN",
+    theme: "FOCUS",
+    weight: 1.0,
+  },
+  {
+    name: "Ness Labs",
+    feedUrl: "https://nesslabs.com/feed",
+    websiteUrl: "https://nesslabs.com",
     region: "ANGLOSAXON",
     language: "EN",
+    theme: "FOCUS",
+    weight: 1.0,
+  },
+  {
+    name: "Greater Good (UC Berkeley)",
+    feedUrl: "https://greatergood.berkeley.edu/site/rss/articles",
+    websiteUrl: "https://greatergood.berkeley.edu",
+    region: "NORTH_AMERICA",
+    language: "EN",
+    theme: "FOCUS",
+    weight: 1.0,
+  },
+  {
+    name: "Mindful",
+    feedUrl: "https://www.mindful.org/feed/",
+    websiteUrl: "https://www.mindful.org",
+    region: "NORTH_AMERICA",
+    language: "EN",
+    theme: "FOCUS",
     weight: 0.9,
   },
 
-  // --- Global / thematic ---------------------------------------------
+  // --- Finance & financial education (Nebula Finterest) -----------------
   {
-    name: "Al Jazeera English",
-    feedUrl: "https://www.aljazeera.com/xml/rss/all.xml",
-    websiteUrl: "https://www.aljazeera.com",
-    region: "GLOBAL",
-    language: "EN",
+    // Run by the Institut pour l'éducation financière du public (IEFP).
+    name: "La finance pour tous",
+    feedUrl: "https://www.lafinancepourtous.com/feed/",
+    websiteUrl: "https://www.lafinancepourtous.com",
+    region: "FRANCE",
+    language: "FR",
+    theme: "FINANCE",
+    weight: 1.3,
+  },
+  {
+    name: "Finance Héros",
+    feedUrl: "https://www.finance-heros.fr/feed/",
+    websiteUrl: "https://www.finance-heros.fr",
+    region: "FRANCE",
+    language: "FR",
+    theme: "FINANCE",
     weight: 1.1,
   },
   {
-    name: "Courrier International",
-    feedUrl: "https://www.courrierinternational.com/feed/all/rss.xml",
-    websiteUrl: "https://www.courrierinternational.com",
-    region: "GLOBAL",
+    name: "Le Revenu",
+    feedUrl: "https://www.lerevenu.com/rss.xml",
+    websiteUrl: "https://www.lerevenu.com",
+    region: "FRANCE",
     language: "FR",
+    theme: "FINANCE",
     weight: 1.0,
+  },
+  {
+    name: "Épargnant 3.0",
+    feedUrl: "https://epargnant30.fr/feed/",
+    websiteUrl: "https://epargnant30.fr",
+    region: "FRANCE",
+    language: "FR",
+    theme: "FINANCE",
+    weight: 1.0,
+  },
+  {
+    name: "NerdWallet",
+    feedUrl: "https://www.nerdwallet.com/blog/feed/",
+    websiteUrl: "https://www.nerdwallet.com",
+    region: "NORTH_AMERICA",
+    language: "EN",
+    theme: "FINANCE",
+    weight: 1.2,
+  },
+  {
+    name: "Kiplinger",
+    feedUrl: "https://www.kiplinger.com/feeds/all",
+    websiteUrl: "https://www.kiplinger.com",
+    region: "NORTH_AMERICA",
+    language: "EN",
+    theme: "FINANCE",
+    weight: 1.1,
+  },
+  {
+    name: "MarketWatch — Top Stories",
+    feedUrl: "https://feeds.marketwatch.com/marketwatch/topstories/",
+    websiteUrl: "https://www.marketwatch.com",
+    region: "NORTH_AMERICA",
+    language: "EN",
+    theme: "FINANCE",
+    weight: 1.0,
+  },
+  {
+    name: "Mr. Money Mustache",
+    feedUrl: "https://www.mrmoneymustache.com/feed/",
+    websiteUrl: "https://www.mrmoneymustache.com",
+    region: "NORTH_AMERICA",
+    language: "EN",
+    theme: "FINANCE",
+    weight: 0.9,
+  },
+
+  // --- Tech & computing (Nebula Hub) -------------------------------------
+  {
+    name: "Next",
+    feedUrl: "https://next.ink/feed/",
+    websiteUrl: "https://next.ink",
+    region: "FRANCE",
+    language: "FR",
+    theme: "TECH",
+    weight: 1.3,
+  },
+  {
+    name: "Numerama",
+    feedUrl: "https://www.numerama.com/feed/",
+    websiteUrl: "https://www.numerama.com",
+    region: "FRANCE",
+    language: "FR",
+    theme: "TECH",
+    weight: 1.1,
+  },
+  {
+    name: "Le Monde Informatique",
+    feedUrl: "https://www.lemondeinformatique.fr/flux-rss/thematique/toutes-les-actualites/rss.xml",
+    websiteUrl: "https://www.lemondeinformatique.fr",
+    region: "FRANCE",
+    language: "FR",
+    theme: "TECH",
+    weight: 1.0,
+  },
+  {
+    name: "01net",
+    feedUrl: "https://www.01net.com/actualites/feed/",
+    websiteUrl: "https://www.01net.com",
+    region: "FRANCE",
+    language: "FR",
+    theme: "TECH",
+    weight: 1.0,
+  },
+  {
+    name: "Frandroid",
+    feedUrl: "https://www.frandroid.com/feed",
+    websiteUrl: "https://www.frandroid.com",
+    region: "FRANCE",
+    language: "FR",
+    theme: "TECH",
+    weight: 0.9,
+  },
+  {
+    name: "Korben",
+    feedUrl: "https://korben.info/feed",
+    websiteUrl: "https://korben.info",
+    region: "FRANCE",
+    language: "FR",
+    theme: "TECH",
+    weight: 0.9,
+  },
+  {
+    name: "Ars Technica — Biz & IT",
+    feedUrl: "https://feeds.arstechnica.com/arstechnica/technology-lab",
+    websiteUrl: "https://arstechnica.com",
+    region: "NORTH_AMERICA",
+    language: "EN",
+    theme: "TECH",
+    weight: 1.3,
+  },
+  {
+    name: "MIT Technology Review",
+    feedUrl: "https://www.technologyreview.com/feed/",
+    websiteUrl: "https://www.technologyreview.com",
+    region: "NORTH_AMERICA",
+    language: "EN",
+    theme: "TECH",
+    weight: 1.2,
+  },
+  {
+    name: "The Verge — Tech",
+    feedUrl: "https://www.theverge.com/rss/tech/index.xml",
+    websiteUrl: "https://www.theverge.com",
+    region: "NORTH_AMERICA",
+    language: "EN",
+    theme: "TECH",
+    weight: 1.1,
+  },
+  {
+    name: "TechCrunch",
+    feedUrl: "https://techcrunch.com/feed/",
+    websiteUrl: "https://techcrunch.com",
+    region: "NORTH_AMERICA",
+    language: "EN",
+    theme: "TECH",
+    weight: 1.0,
+  },
+  {
+    // Only stories past 300 points: the front page as voted by developers.
+    name: "Hacker News",
+    feedUrl: "https://hnrss.org/frontpage?points=300",
+    websiteUrl: "https://news.ycombinator.com",
+    region: "GLOBAL",
+    language: "EN",
+    theme: "TECH",
+    weight: 0.9,
   },
 ];

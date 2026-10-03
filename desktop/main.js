@@ -7,20 +7,36 @@
 // kills the server. See scripts/prepare-desktop-build.mjs for how the
 // standalone bundle gets assembled, and README.md for the full build flow.
 //
-// Nebula Hub (optional, desktop/nebula.js): the "Top stories" widget, the
-// "briefing ready" notification, the Nebula language, deep links and the Hub
-// mode. Without the Hub nothing changes.
-const { app, BrowserWindow, session, shell } = require("electron");
+// Nebula Hub (optional, desktop/nebula.js): the "Top stories" and theme
+// widgets, the "briefing ready" notification, the Nebula appearance, deep
+// links and the Hub mode. Without the Hub nothing changes.
+//
+// The window has no native frame (as every app of the family): the page draws
+// a drag strip and Windows draws the three controls, tinted to the theme of the
+// appearance cookie (titleBarOverlay). The main process talks to the page only
+// through cookies the server reads (appearance, Hub status, Hub mode) — there is
+// no preload and no IPC.
+const { app, BrowserWindow, nativeTheme, session, shell } = require("electron");
 const path = require("node:path");
 const fs = require("node:fs");
 const net = require("node:net");
 const http = require("node:http");
 const { spawn } = require("node:child_process");
 const { NebulaIntegration } = require("./nebula");
-const { externalTarget, isDockPayload } = require("./nebula-rules");
+const {
+  COOKIES,
+  DETACH_PATH,
+  chromeColors,
+  externalTarget,
+  hubAppearanceCookie,
+  hubLanguage,
+  isDockPayload,
+  themeOfCookie,
+} = require("./nebula-rules");
 
 const INGEST_INTERVAL_MS = 3 * 3600 * 1000;
-const LOCALE_COOKIE = "nebula-locale";
+/** Height of the page's drag strip (.titlebar-drag) and of the window controls. */
+const TITLE_BAR_HEIGHT = 36;
 
 app.setName("Nebula News");
 
@@ -176,6 +192,86 @@ function openOutside(url) {
 /** The Nebula Hub mode: frameless window placed by the Hub (see openWindow). */
 const dock = { docked: false, normalBounds: null, busy: Promise.resolve() };
 
+/** The theme chosen in the appearance cookie, kept in step by the cookie listener. */
+let windowTheme = "system";
+/** The last appearance Nebula Hub broadcast, applied again when "follow" is turned back on. */
+let lastHubAppearance = null;
+
+async function cookieValue(name) {
+  if (!baseUrl) return undefined;
+  const [cookie] = await session.defaultSession.cookies.get({ url: baseUrl, name }).catch(() => []);
+  return cookie?.value;
+}
+
+/** A cookie for the local server (host-wide, so it survives the new port of the next launch). */
+function setCookie(name, value) {
+  if (!baseUrl) return Promise.resolve();
+  return session.defaultSession.cookies
+    .set({ url: baseUrl, name, value, path: "/", sameSite: "lax", expirationDate: Math.floor(Date.now() / 1000) + 31536000 })
+    .catch(() => undefined);
+}
+
+function chrome() {
+  return chromeColors(windowTheme, nativeTheme.shouldUseDarkColors);
+}
+
+/** Transparent overlay: the page's own background (and its animated glow) shows behind the controls. */
+function titleBarOverlay() {
+  return { color: "rgba(0, 0, 0, 0)", symbolColor: chrome().ink, height: TITLE_BAR_HEIGHT };
+}
+
+/** Keeps the native window controls in the current theme. */
+function applyWindowTheme() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.setBackgroundColor(chrome().page);
+  if (!dock.docked) mainWindow.setTitleBarOverlay(titleBarOverlay());
+}
+
+/**
+ * Nebula Hub broadcast its appearance: written 1:1 into the app's cookies (theme, accent,
+ * background, motion, sounds and language) when "Follow Nebula Hub's appearance" is on, then
+ * the page reloads — only if something actually changed.
+ */
+async function applyHubAppearance(appearance) {
+  lastHubAppearance = appearance;
+  if (!baseUrl || (await cookieValue(COOKIES.followHub)) === "0") return;
+  let changed = false;
+  const value = hubAppearanceCookie(appearance);
+  if (value && value !== (await cookieValue(COOKIES.appearance))) {
+    await setCookie(COOKIES.appearance, value);
+    changed = true;
+  }
+  const language = hubLanguage(appearance);
+  if (language && language !== (await cookieValue(COOKIES.locale))) {
+    await setCookie(COOKIES.locale, language);
+    changed = true;
+  }
+  if (changed) mainWindow?.webContents.reload();
+}
+
+/** The Hub status, for the sidebar card: a cookie for the next render, an event for this one. */
+async function setHubStatus(status) {
+  await setCookie(COOKIES.hubStatus, status === "connected" ? "connected" : "offline");
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    void mainWindow.webContents.executeJavaScript("window.dispatchEvent(new Event('nebula-hub-status'))").catch(() => undefined);
+  }
+}
+
+function watchCookies() {
+  session.defaultSession.cookies.on("changed", (_event, cookie, _cause, removed) => {
+    if (removed) return;
+    if (cookie.name === COOKIES.appearance) {
+      windowTheme = themeOfCookie(cookie.value);
+      applyWindowTheme();
+    }
+    // Following the Hub again: its last appearance applies at once.
+    if (cookie.name === COOKIES.followHub && cookie.value !== "0" && lastHubAppearance) {
+      void applyHubAppearance(lastHubAppearance);
+    }
+  });
+  nativeTheme.on("updated", applyWindowTheme);
+}
+
 function openWindow(options = {}) {
   const docked = options.docked === true;
   const window = new BrowserWindow({
@@ -188,9 +284,9 @@ function openWindow(options = {}) {
     // taskbar, and only the Hub moves or sizes it.
     ...(docked
       ? { frame: false, thickFrame: false, skipTaskbar: true, resizable: false, movable: false, minimizable: false, maximizable: false, fullscreenable: false }
-      : {}),
+      : { titleBarStyle: "hidden", titleBarOverlay: titleBarOverlay() }),
     show: false,
-    backgroundColor: "#0A0A0F",
+    backgroundColor: chrome().page,
     autoHideMenuBar: true,
     icon: path.join(__dirname, "icon.ico"),
     webPreferences: {
@@ -209,6 +305,12 @@ function openWindow(options = {}) {
   });
   // A plain link (no target) must not take the window away from the app either.
   window.webContents.on("will-navigate", (event, url) => {
+    // "Detach" in the Hub mode band: back to the normal window, nothing is loaded.
+    if (baseUrl && url === `${baseUrl}${DETACH_PATH}`) {
+      event.preventDefault();
+      void applyDock({ state: "released" });
+      return;
+    }
     if (baseUrl && (url === baseUrl || url.startsWith(`${baseUrl}/`))) return;
     event.preventDefault();
     openOutside(url);
@@ -259,11 +361,13 @@ function replaceWindow(options) {
 function applyDock(payload) {
   if (!isDockPayload(payload)) return dock.busy;
   dock.busy = dock.busy
-    .then(() => {
+    .then(async () => {
       if (payload.state === "released") return undock();
       if (!dock.docked) {
         dock.normalBounds = mainWindow && !mainWindow.isDestroyed() ? mainWindow.getBounds() : null;
         dock.docked = true;
+        // The new page renders the Hub mode band ("Detach") from this cookie.
+        await setCookie(COOKIES.docked, "1");
         replaceWindow({ docked: true, bounds: payload.bounds });
       }
       const window = mainWindow;
@@ -278,30 +382,25 @@ function applyDock(payload) {
   return dock.busy;
 }
 
-function undock() {
+async function undock() {
   if (!dock.docked) return;
   dock.docked = false;
+  await setCookie(COOKIES.docked, "0");
   replaceWindow({ docked: false, bounds: dock.normalBounds ?? undefined });
   focusWindow();
-}
-
-/** The Nebula language, written to the app's own locale cookie, then the page reloads. */
-async function applyLanguage(language) {
-  if (!baseUrl) return;
-  await session.defaultSession.cookies.set({
-    url: baseUrl,
-    name: LOCALE_COOKIE,
-    value: language,
-    expirationDate: Math.floor(Date.now() / 1000) + 31536000,
-    sameSite: "lax",
-  });
-  mainWindow?.webContents.reload();
 }
 
 async function createWindow() {
   const port = await startServer();
   baseUrl = `http://127.0.0.1:${port}`;
   scheduleIngestion(port);
+
+  // A fresh start is never docked and the Hub is not connected yet (the cookies of the last
+  // session would say otherwise); the window opens in the theme the user chose.
+  await setCookie(COOKIES.docked, "0");
+  await setCookie(COOKIES.hubStatus, "offline");
+  windowTheme = themeOfCookie(await cookieValue(COOKIES.appearance));
+  watchCookies();
 
   nebula = new NebulaIntegration({
     appVersion: app.getVersion(),
@@ -313,7 +412,8 @@ async function createWindow() {
     briefing: () => getJson("/api/briefing/today"),
     language: () => (app.getLocale().startsWith("en") ? "en" : "fr"),
     openRoute,
-    applyLanguage: (language) => void applyLanguage(language),
+    onAppearance: (appearance) => void applyHubAppearance(appearance),
+    onHubStatus: (status) => void setHubStatus(status),
     onDock: (payload) => void applyDock(payload),
   });
 

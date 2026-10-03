@@ -10,18 +10,29 @@ export type Region = (typeof REGIONS)[number];
 export const LANGUAGES = ["FR", "EN"] as const;
 export type Language = (typeof LANGUAGES)[number];
 
-export const CATEGORY_KEYS = [
-  "WORLD",
-  "POLITICS",
-  "ECONOMY",
-  "TECH",
-  "SCIENCE",
-  "CULTURE",
-  "ENVIRONMENT",
-  "SPORTS",
-  "HEALTH",
-] as const;
-export type CategoryKey = (typeof CATEGORY_KEYS)[number];
+// The three themes of Nebula News, one per app of the family: personal growth and life
+// organization (Nebula Clock), finance and financial education (Nebula Finterest), tech and
+// computing (Nebula Hub). They are stored as Category rows (by key), so the schema does not
+// change: an installed database only gains these rows (lib/ingestion/run.ts). Articles from
+// the former general-news sources keep their old keys (WORLD, POLITICS…) and are hidden,
+// never deleted (their sources are marked inactive).
+export const THEME_KEYS = ["FOCUS", "FINANCE", "TECH"] as const;
+export type ThemeKey = (typeof THEME_KEYS)[number];
+
+/** URL segment of each theme: `/theme/<slug>` and `nebula://news/theme/<slug>`. */
+export const THEME_SLUGS: Record<ThemeKey, string> = {
+  FOCUS: "focus",
+  FINANCE: "finance",
+  TECH: "tech",
+};
+
+export function isThemeKey(value: unknown): value is ThemeKey {
+  return typeof value === "string" && (THEME_KEYS as readonly string[]).includes(value);
+}
+
+export function themeOfSlug(slug: string): ThemeKey | null {
+  return THEME_KEYS.find((key) => THEME_SLUGS[key] === slug) ?? null;
+}
 
 export type Locale = "fr" | "en";
 
@@ -37,18 +48,18 @@ export type ArticleCard = {
   importanceScore: number;
   isBriefingPick: boolean;
   source: { name: string; websiteUrl: string };
-  categories: CategoryKey[];
+  themes: ThemeKey[];
 };
 
 export type BriefingResponse = {
   date: string;
-  themes: CategoryKey[];
+  themes: ThemeKey[];
   stories: ArticleCard[];
 };
 
 export type ArticleFilters = {
   region?: Region;
-  category?: CategoryKey;
+  theme?: ThemeKey;
   language?: Language;
   q?: string;
   from?: string;

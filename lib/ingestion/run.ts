@@ -2,9 +2,10 @@ import { db } from "@/lib/db";
 import { SOURCES } from "@/lib/sources/config";
 import { fetchFeed } from "./fetchFeeds";
 import { normalizeItem } from "./normalize";
-import { classifyArticle } from "@/lib/processing/classify";
 import { summarizeArticle } from "@/lib/processing/summarize";
 import { computeImportance } from "@/lib/processing/score";
+import { BRIEFING_WINDOW_DAYS, HALF_LIFE_HOURS, pickBriefing, themesOf } from "@/lib/themes";
+import { THEME_KEYS } from "@/types";
 
 export type IngestionSummary = {
   sourcesProcessed: number;
@@ -21,6 +22,17 @@ export async function runIngestion(): Promise<IngestionSummary> {
     itemsFetched: 0,
     itemsInserted: 0,
   };
+
+  // Installed databases were seeded with the former categories: the three themes are added
+  // here (upsert, additive), and sources dropped from the configuration are only marked
+  // inactive, so their articles stay on disk but are no longer shown.
+  for (const key of THEME_KEYS) {
+    await db.category.upsert({ where: { key }, update: {}, create: { key } });
+  }
+  await db.source.updateMany({
+    where: { feedUrl: { notIn: SOURCES.map((source) => source.feedUrl) } },
+    data: { active: false },
+  });
 
   const categoryRecords = await db.category.findMany();
   const categoryIdByKey = new Map(categoryRecords.map((c) => [c.key, c.id]));
@@ -64,7 +76,7 @@ export async function runIngestion(): Promise<IngestionSummary> {
         });
         if (exists) continue;
 
-        const categories = classifyArticle(normalized.title, normalized.rawContent);
+        const categories = [sourceConfig.theme];
         const summaryText = await summarizeArticle(
           normalized.title,
           normalized.rawContent,
@@ -73,7 +85,7 @@ export async function runIngestion(): Promise<IngestionSummary> {
         const importanceScore = computeImportance({
           sourceWeight: sourceConfig.weight,
           publishedAt: normalized.publishedAt,
-          categories,
+          halfLifeHours: HALF_LIFE_HOURS[sourceConfig.theme],
         });
 
         await db.article.create({
@@ -129,26 +141,50 @@ export async function runIngestion(): Promise<IngestionSummary> {
   return summary;
 }
 
-/** Marks the top ~16 articles from the last 24h as today's briefing picks. */
-async function markBriefingPicks(limit = 16) {
-  const since = new Date(Date.now() - 24 * 3600 * 1000);
+/**
+ * Marks today's briefing: the best articles of each theme over the last week, from active
+ * sources. The score is recomputed now (source weight × recency), since the stored one was
+ * frozen when the article was inserted and would favor old articles that were fresh then.
+ */
+async function markBriefingPicks() {
+  const since = new Date(Date.now() - BRIEFING_WINDOW_DAYS * 24 * 3600 * 1000);
 
   await db.article.updateMany({
     where: { isBriefingPick: true },
     data: { isBriefingPick: false },
   });
 
-  const top = await db.article.findMany({
-    where: { publishedAt: { gte: since } },
-    orderBy: { importanceScore: "desc" },
-    take: limit,
-    select: { id: true },
+  const candidates = await db.article.findMany({
+    where: {
+      publishedAt: { gte: since },
+      source: { active: true },
+      categories: { some: { category: { key: { in: [...THEME_KEYS] } } } },
+    },
+    select: {
+      id: true,
+      sourceId: true,
+      publishedAt: true,
+      source: { select: { weight: true } },
+      categories: { select: { category: { select: { key: true } } } },
+    },
   });
 
-  if (top.length === 0) return;
+  const picks = pickBriefing(
+    candidates.flatMap((article) => {
+      const theme = themesOf(article.categories.map((c) => c.category.key))[0];
+      if (!theme) return [];
+      const importanceScore = computeImportance({
+        sourceWeight: article.source.weight,
+        publishedAt: article.publishedAt,
+        halfLifeHours: HALF_LIFE_HOURS[theme],
+      });
+      return [{ id: article.id, sourceId: article.sourceId, theme, importanceScore }];
+    })
+  );
+  if (picks.length === 0) return;
 
   await db.article.updateMany({
-    where: { id: { in: top.map((a) => a.id) } },
+    where: { id: { in: picks.map((pick) => pick.id) } },
     data: { isBriefingPick: true },
   });
 }

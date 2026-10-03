@@ -1,32 +1,20 @@
-import type { CategoryKey } from "@/types";
-
-const CATEGORY_BOOST: Partial<Record<CategoryKey, number>> = {
-  WORLD: 1.15,
-  POLITICS: 1.1,
-  ECONOMY: 1.05,
-};
-
 /**
- * Importance score blends three signals into a single sortable number:
+ * Importance score blends two signals into a single sortable number:
  * - source weight (editorial trust, set in lib/sources/config.ts)
- * - recency (exponential decay, half-life ~18h so the briefing stays fresh)
- * - topic boost (world/politics/economy skew slightly higher for a "briefing")
+ * - recency (exponential decay; the half-life depends on the theme, see HALF_LIFE_HOURS in
+ *   lib/themes.ts — 18h by default so tech news stays fresh)
+ * Themes are not weighted against each other: the briefing picks the best of each theme
+ * separately (lib/themes.ts).
  */
 export function computeImportance(params: {
   sourceWeight: number;
   publishedAt: Date;
-  categories: CategoryKey[];
+  halfLifeHours?: number;
 }): number {
-  const { sourceWeight, publishedAt, categories } = params;
+  const { sourceWeight, publishedAt, halfLifeHours = 18 } = params;
 
   const ageHours = Math.max(0, (Date.now() - publishedAt.getTime()) / 36e5);
-  const halfLifeHours = 18;
   const recencyFactor = Math.pow(0.5, ageHours / halfLifeHours);
 
-  const topicFactor = Math.max(
-    ...categories.map((c) => CATEGORY_BOOST[c] ?? 1),
-    1
-  );
-
-  return Number((sourceWeight * recencyFactor * topicFactor * 100).toFixed(2));
+  return Number((sourceWeight * recencyFactor * 100).toFixed(2));
 }

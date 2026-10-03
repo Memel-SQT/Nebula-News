@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { Button } from "@/components/ui/Button";
+import { Icon } from "@/lib/nebula-design/Icon";
+import { useI18n } from "@/lib/i18n/client";
+import { ErrorBanner } from "@/components/shell/ScreenState";
 
 export default function GlobalError({
   error,
@@ -10,26 +12,26 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const { t } = useI18n();
+
   useEffect(() => {
     console.error(error);
   }, [error]);
 
   return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-6 text-center">
-      <p className="text-sm font-semibold uppercase tracking-widest text-nebula-violet-bright">
-        Nebula News
-      </p>
-      <h1 className="text-2xl font-bold text-nebula-text">
-        Something drifted off course.
-      </h1>
-      <p className="max-w-md text-sm text-nebula-text-secondary">
-        We couldn&apos;t load the news right now — this usually means the
-        database isn&apos;t reachable yet. Check your <code>DATABASE_URL</code>{" "}
-        and that ingestion has run at least once.
-      </p>
-      <Button variant="secondary" onClick={reset}>
-        Try again
-      </Button>
-    </div>
+    <main className="workspace">
+      <div className="workspace-inner">
+        <ErrorBanner
+          title={t("state.error.title")}
+          message={t("state.error.body")}
+          action={
+            <button type="button" className="ghost small" onClick={reset}>
+              <Icon name="refresh" size={15} />
+              {t("state.retry")}
+            </button>
+          }
+        />
+      </div>
+    </main>
   );
 }

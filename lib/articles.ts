@@ -1,12 +1,15 @@
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import type {
-  ArticleCard,
-  ArticleFilters,
-  BriefingResponse,
-  CategoryKey,
-  Language,
-  Region,
+import { computeImportance } from "@/lib/processing/score";
+import { HALF_LIFE_HOURS, interleaveByTheme, themesOf, themesWithStories } from "@/lib/themes";
+import {
+  THEME_KEYS,
+  type ArticleCard,
+  type ArticleFilters,
+  type BriefingResponse,
+  type Language,
+  type Region,
+  type ThemeKey,
 } from "@/types";
 
 const cardSelect = {
@@ -20,7 +23,7 @@ const cardSelect = {
   publishedAt: true,
   importanceScore: true,
   isBriefingPick: true,
-  source: { select: { name: true, websiteUrl: true } },
+  source: { select: { name: true, websiteUrl: true, weight: true } },
   categories: { select: { category: { select: { key: true } } } },
 } satisfies Prisma.ArticleSelect;
 
@@ -41,10 +44,17 @@ function toCard(article: RawArticle): ArticleCard {
     publishedAt: article.publishedAt.toISOString(),
     importanceScore: article.importanceScore,
     isBriefingPick: article.isBriefingPick,
-    source: article.source,
-    categories: article.categories.map((c) => c.category.key as CategoryKey),
+    source: { name: article.source.name, websiteUrl: article.source.websiteUrl },
+    themes: themesOf(article.categories.map((c) => c.category.key)),
   };
 }
+
+/** What the app shows: articles of the active sources, in one of the three themes. Articles
+ *  of the former general-news sources stay in the database but never match. */
+const visible = {
+  source: { active: true },
+  categories: { some: { category: { key: { in: [...THEME_KEYS] } } } },
+} satisfies Prisma.ArticleWhereInput;
 
 const DEFAULT_PAGE_SIZE = 24;
 
@@ -53,11 +63,12 @@ export async function getArticles(filters: ArticleFilters) {
   const pageSize = Math.min(filters.pageSize ?? DEFAULT_PAGE_SIZE, 60);
 
   const where: Prisma.ArticleWhereInput = {
+    AND: [
+      visible,
+      filters.theme ? { categories: { some: { category: { key: filters.theme } } } } : {},
+    ],
     region: filters.region,
     language: filters.language,
-    categories: filters.category
-      ? { some: { category: { key: filters.category } } }
-      : undefined,
     publishedAt:
       filters.from || filters.to
         ? {
@@ -93,6 +104,7 @@ export async function getArticles(filters: ArticleFilters) {
   };
 }
 
+/** A single article stays reachable by its link even if its source was retired. */
 export async function getArticleById(id: string): Promise<ArticleCard | null> {
   const article = await db.article.findUnique({ where: { id }, select: cardSelect });
   return article ? toCard(article) : null;
@@ -102,6 +114,7 @@ export async function searchArticles(q: string, limit = 20) {
   if (!q.trim()) return [];
   const items = await db.article.findMany({
     where: {
+      ...visible,
       OR: [{ title: { contains: q } }, { summary: { contains: q } }],
     },
     select: cardSelect,
@@ -111,33 +124,47 @@ export async function searchArticles(q: string, limit = 20) {
   return items.map(toCard);
 }
 
-const THEME_MIN_STORIES = 2;
-
+/**
+ * Today's briefing: the picks of the last ingestion (five per theme, lib/themes.ts), ordered
+ * round-robin across the themes so the first three stories are one per theme. The score is
+ * recomputed now, as when the picks were made.
+ */
 export async function getBriefingToday(): Promise<BriefingResponse> {
   const items = await db.article.findMany({
-    where: { isBriefingPick: true },
+    where: { ...visible, isBriefingPick: true },
     select: cardSelect,
-    orderBy: [{ importanceScore: "desc" }],
   });
 
-  const cards = items.map(toCard);
-
-  const categoryCounts = new Map<CategoryKey, number>();
-  for (const card of cards) {
-    for (const key of card.categories) {
-      categoryCounts.set(key, (categoryCounts.get(key) ?? 0) + 1);
-    }
-  }
-
-  const themes = [...categoryCounts.entries()]
-    .filter(([, count]) => count >= THEME_MIN_STORIES)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([key]) => key);
+  const stories = interleaveByTheme(
+    items.map((item) => {
+      const card = toCard(item);
+      const theme = card.themes[0];
+      return {
+        ...card,
+        importanceScore: computeImportance({
+          sourceWeight: item.source.weight,
+          publishedAt: item.publishedAt,
+          halfLifeHours: theme ? HALF_LIFE_HOURS[theme] : undefined,
+        }),
+      };
+    })
+  );
 
   return {
     date: new Date().toISOString().slice(0, 10),
-    themes,
-    stories: cards,
+    themes: themesWithStories(stories),
+    stories,
   };
+}
+
+/** How many visible articles each theme has (home page cards). */
+export async function getThemeCounts(): Promise<Record<ThemeKey, number>> {
+  const counts = await Promise.all(
+    THEME_KEYS.map((theme) =>
+      db.article.count({
+        where: { source: { active: true }, categories: { some: { category: { key: theme } } } },
+      })
+    )
+  );
+  return Object.fromEntries(THEME_KEYS.map((theme, index) => [theme, counts[index]])) as Record<ThemeKey, number>;
 }

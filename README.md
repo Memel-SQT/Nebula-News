@@ -1,16 +1,26 @@
 # Nebula News
 
-A daily world news briefing, aggregated from neutral, reputable French and
-English sources and presented in a premium, dark, cosmic interface.
+A daily briefing on three themes, one per app of the Nebula family, aggregated
+from reference French and English sources and presented in a premium, dark,
+cosmic interface:
+
+| Theme | For | Sources (examples) |
+|---|---|---|
+| **Personal growth** — organization, habits, focus, life balance | Nebula Clock | Cal Newport, Farnam Street, Ness Labs, Psyche, Cerveau & Psycho, Habitudes Zen |
+| **Finance** — budgeting, saving, investing, financial literacy | Nebula Finterest | La finance pour tous, Finance Héros, Le Revenu, NerdWallet, Kiplinger |
+| **Tech & computing** — software, AI, security, hardware | Nebula Hub | Next, Numerama, Le Monde Informatique, Ars Technica, MIT Technology Review |
+
+General world news is gone since 0.4.0: articles from the former sources stay
+in the local database but are no longer shown (see
+[How ingestion works](#how-ingestion-works)).
 
 Ships as a **Windows desktop app** — zero setup, no server to run or
 database to host, just an installer. The same code also works as a
 Postgres-backed hosted web app if you'd rather deploy it (see
 [Running as a hosted web app](#running-as-a-hosted-web-app-instead)).
 
-Visual identity is shared 1:1 with the [Nebula](../Nebula) desktop app: the
-same black → navy → violet gradient, card system, and typography, ported from
-its `theme.css` into Tailwind tokens (see [Design system](#design-system)).
+Its interface is the Nebula family's, identical to Nebula Hub's (see
+[Design system](#design-system)).
 
 ## Tech stack
 
@@ -35,34 +45,46 @@ of scope for a first pass. See [Adding authentication](#adding-authentication).
 
 ```
 app/
-  layout.tsx              root layout: locale, I18nProvider, Navbar, bg glow
+  layout.tsx              root layout: appearance from the cookie, sidebar, Hub mode band
   page.tsx                home dashboard (filters + article grid)
-  briefing/page.tsx        daily briefing (themes + top stories)
+  briefing/page.tsx        daily briefing (one section per theme)
+  theme/[theme]/page.tsx   one theme: /theme/focus, /theme/finance, /theme/tech
   article/[id]/page.tsx    article detail view
+  sources/page.tsx         followed sources and their last collection
+  settings/page.tsx        appearance (+ Nebula Hub on the desktop)
   api/
     articles/route.ts       GET  filtered article list
     briefing/today/route.ts GET  today's briefing
     search/route.ts         GET  keyword search
     ingest/route.ts          GET/POST ingestion trigger (cron / Electron scheduler / manual)
 components/
-  ui/          Badge, Button, Card — shared primitives
-  layout/      Navbar, PageShell, SectionHeader, BgGlow
-  filters/     LanguageToggle, RegionFilter, CategoryChips, FilterBar
-  news/        NewsCard, Tag, ArticleGrid, ThemesPanel
+  appearance/  AppearanceProvider (applies the appearance, background, sounds)
+  shell/       Sidebar, PageFrame, ScreenState, CollectBanner, DetachBand
+  settings/    SettingsPanel
+  filters/     FilterBar
+  news/        NewsCard, ArticleGrid, Pagination
+styles/
+  nebula/      @nebula/design styles (ported from Nebula Hub)
+  news/        Hub shell styles, bridge.css, news.css
 lib/
   db.ts                    Prisma client singleton
   articles.ts              data access layer (list/search/briefing queries)
   utils.ts                 cn(), timeAgo()
+  appearance/              appearance cookie (parse, accent sheet, boot script), server reader
+  nebula-design/           @nebula/design modules + Tailwind preset (ported)
+  navigation.ts            sidebar sections and theme icons
+  collect.ts               collection status (offline banner) and Sources overview
   i18n/                    fr.json, en.json, dictionary + locale helpers
   sources/config.ts        the configurable source list
   ingestion/               fetchFeeds, normalize, run (orchestrator)
-  processing/               classify (topics), score (importance), summarize
+  processing/               score (importance), summarize
+  themes.ts                the three themes: briefing picks, ordering (tested)
 desktop/
   main.js                  Electron main process (spawns the server, opens the window)
   icon.ico                 app/installer icon
 prisma/
   schema.prisma
-  seed.ts                  seeds categories + sources from lib/sources/config.ts
+  seed.ts                  seeds the three themes + sources from lib/sources/config.ts
 scripts/
   run-ingestion.ts         `npm run ingest` entrypoint
   prepare-desktop-build.mjs builds the standalone server bundle for packaging
@@ -97,7 +119,7 @@ npx prisma migrate dev --name init
 npm run seed
 ```
 
-`npm run seed` seeds the category list and the sources from
+`npm run seed` seeds the three themes and the sources from
 [`lib/sources/config.ts`](lib/sources/config.ts) into the `Source` table.
 
 ### 4. Fetch the first batch of articles
@@ -106,7 +128,7 @@ npm run seed
 npm run ingest
 ```
 
-This runs the full ingestion pipeline once (fetch → normalize → classify →
+This runs the full ingestion pipeline once (fetch → normalize → theme →
 summarize → score → store) and marks the day's top stories for the
 briefing. It's idempotent — run it as often as you like.
 
@@ -183,19 +205,27 @@ desktop app connects to it through Nebula Link (`desktop/nebula.js`, SDK
 `@nebula/link`, manifest `nebula.app.json` shipped in `resources\`), a local
 named pipe — never a network call. It only shares public data:
 
-- the **"Top stories" widget** on the Hub's Home: the first three stories of
-  today's briefing with their source;
+- the **"Top stories" widget** (`news.headlines.today`): the first three
+  stories of today's briefing, one per theme, with their source;
+- **one widget per theme**, for the app of that theme: `news.focus.today`
+  (Nebula Clock), `news.finance.today` (Nebula Finterest) and
+  `news.tech.today` (the Hub's Home). Each opens its theme
+  (`nebula://news/theme/focus|finance|tech`); an app reads its widget with
+  `link.query(...)` after declaring it in its own `consumes`;
 - **"Your briefing is ready"** in the Hub's activity centre, once a day;
 - deep links and the intent `news.open-briefing` (`nebula://news/briefing`),
   which Nebula Clock's long breaks can offer;
-- the **Nebula language**, applied only when it changes in the Hub, so the
-  app's own language toggle keeps working;
+- the **Nebula appearance** (theme, accent, background, motion, sounds,
+  language), applied 1:1 while "Follow Nebula Hub's appearance" is on
+  (Settings > Nebula Hub);
 - the **Hub mode**: the window can open inside the Hub's window (frameless,
-  placed by the Hub), and comes back to normal when released or when the Hub
-  goes away.
+  placed by the Hub, with a "Detach" band to bring it back), and comes back to
+  normal when released or when the Hub goes away.
 
-A "Nebula apps" link in the navigation (desktop only) opens the Hub, or its
-download page when it is not installed. Without the Hub nothing changes. The
+"Nebula apps" in the sidebar (desktop only) opens the Hub, or its download
+page when it is not installed; the "Nebula Hub" card below it shows whether
+the Hub is connected. The main process talks to the page only through cookies
+the local server reads (appearance, Hub status, Hub mode): no preload, no IPC. Without the Hub nothing changes. The
 pure rules are tested with `npm test` (`node --test`).
 
 Also in the desktop shell: one instance at a time (a second launch or a deep
@@ -212,19 +242,28 @@ app (links open in the browser, http(s) only; nothing else opens).
 2. Normalizes each item into a common shape — title, URL, source, region,
    language, published date, plain-text content (`lib/ingestion/normalize.ts`).
 3. Skips items whose `originalUrl` already exists (dedup).
-4. Classifies topics with a FR/EN keyword matcher
-   (`lib/processing/classify.ts`) — always returns at least `WORLD`.
+4. Tags the article with its source's theme (`FOCUS`, `FINANCE` or `TECH`):
+   one feed, one theme, which is far more reliable than guessing from
+   keywords.
 5. Summarizes to 2-3 sentences: Claude API if `ANTHROPIC_API_KEY` is set,
    otherwise an extractive summary of the first sentences
    (`lib/processing/summarize.ts`).
-6. Scores importance from source weight × recency decay × topic boost
+6. Scores importance from source weight × recency decay
    (`lib/processing/score.ts`).
 7. Stores the article and logs the run in `IngestionLog`.
-8. Re-picks the top ~16 stories from the last 24h as `isBriefingPick`.
+8. Re-picks the briefing (`lib/themes.ts`): the five best articles of each
+   theme over the last week (personal-growth and finance blogs publish
+   weekly), at most two per source, scored again at pick time.
+
+**Upgrading an installed database** (no schema change): each run adds the
+three theme rows to `Category` if missing, and marks every source that is no
+longer in `lib/sources/config.ts` inactive. The app only shows articles of
+active sources in one of the three themes, so the articles of the former
+general-news sources stay on disk, hidden, and nothing is deleted.
 
 Feed availability is normal to fluctuate — outlets change RSS paths, and
-some (looking at you, RTS and AP) rate-limit or geo/anti-bot-restrict
-requests unpredictably. Check `IngestionLog` (`npx prisma studio`) if a
+some rate-limit or block bots unpredictably (Les Échos, Capital,
+Investopedia and Morningstar were left out for that reason). Check `IngestionLog` (`npx prisma studio`) if a
 source stops producing articles, and swap its `feedUrl` in
 `lib/sources/config.ts` if it's genuinely gone.
 
@@ -240,42 +279,64 @@ Add an entry to the `SOURCES` array in
   websiteUrl: "https://example.com",
   region: "FRANCE" | "NORTH_AMERICA" | "ANGLOSAXON" | "GLOBAL",
   language: "FR" | "EN",
+  theme: "FOCUS" | "FINANCE" | "TECH",
   weight: 1.0, // editorial trust weight used in importance scoring
 }
 ```
 
-Then run `npm run seed` (idempotent upsert) and `npm run ingest`.
+Then run `npm run seed` (idempotent upsert) and `npm run ingest`. Removing an
+entry retires the source (inactive, articles hidden), it does not delete it.
 
-### Adding a category
+### The themes
 
-`Region`/`Language`/`CategoryKey` are plain TypeScript union types in
-[`types/index.ts`](types/index.ts) (SQLite has no native enum type, unlike
-Postgres) — add the new key to `CATEGORY_KEYS` there, add FR/EN labels
-under `categories` in `lib/i18n/fr.json` / `lib/i18n/en.json`, and add
-matching keywords in `lib/processing/classify.ts`. No migration needed
-since the column is just `String`. Then `npm run seed`.
+`ThemeKey` is a plain TypeScript union in [`types/index.ts`](types/index.ts)
+(`THEME_KEYS`, with their URL slugs in `THEME_SLUGS`), stored as `Category`
+rows by key, so no migration is needed. Their FR/EN labels are under
+`themes` in `lib/i18n/fr.json` / `lib/i18n/en.json`; the Nebula Link side
+(widget ids, deep links) is `THEMES` in `desktop/nebula-rules.js` and
+`nebula.app.json`, kept in step by the tests.
 
 ## Design system
 
-Colors, gradients, and component patterns are ported directly from the
-Nebula desktop app's `theme.css` into `tailwind.config.ts` /
-`app/globals.css`:
+Nebula News looks and behaves like the rest of the family (Nebula Hub is the
+living reference): same shell, sidebar, icons, appearance settings,
+components and motion. Nothing is retyped: the files are copied, each with
+its origin in a header.
 
-| Token | Hex | Use |
+| What | Where | From |
 |---|---|---|
-| `nebula-bg` | `#0A0A0F` | page background |
-| `nebula-surface` | `#12121F` | secondary surface |
-| `nebula-card` | `#1A1A2E` | card background |
-| `nebula-card-alt` | `#231942` | hover/alt surface, inputs |
-| `nebula-border` | `#2A2A45` | borders |
-| `nebula-blue` → `nebula-violet` | `#4C6EF5` → `#8B5CF6` | primary gradient (buttons, accents, "big themes") |
-| `nebula-text` | `#F1F1F6` | body text |
-| `nebula-text-secondary` | `#9A94B8` | muted text |
+| Tokens, 4 themes, base elements, backgrounds, motion, settings controls | `styles/nebula/` | Nebula Hub `packages/nebula-design/src/styles` |
+| Appearance model, themes, sounds, effects, animated background, icons | `lib/nebula-design/` | Nebula Hub `packages/nebula-design/src` |
+| Shell, sidebar, dashboard grammar (KPI cards, panels, states) | `styles/news/hub-*.css` | Nebula Hub `src/renderer/styles` |
+| Tailwind preset | `lib/nebula-design/tailwind-preset.ts` | `nebula-design-system/tokens` |
+| News-only rules (article cards, filters, Sources, Hub mode band) | `styles/news/news.css` | variables only, no color value |
 
-Typography is Inter (loaded via Google Fonts in `app/globals.css`), matching
-the "modern sans-serif, clear hierarchy" brief. The ambient `bg-glow` drift
-animation and card/button hover treatments are the same ones used in the
-Nebula desktop app, just reimplemented as Tailwind utilities.
+`styles/news/bridge.css` maps the preset's variable names (`--bg-base`,
+`--card`…) onto the @nebula/design ones, so both work unchanged. Tailwind's
+preflight is off: `styles/nebula/base.css` is the reset, as in the Hub.
+Fonts are the Hub's (Aptos / Segoe UI Variable): no web font, so no request to
+Google Fonts. The two icons drawn for News (`newspaper`, `rss`) follow the
+set's rules (24 px grid, 1.8 px stroke, one duotone shape) and are tested.
+
+### Appearance (Settings)
+
+Theme (Nebula dark / light, Glass dark / light, System), language, accent
+(7 presets, custom with two colors), animated background (6), interface
+motion (full / reduced / off), sounds and volume, and "Reset appearance":
+the model, values, defaults and labels of Nebula Hub.
+
+It is stored in the `nebula-appearance` cookie (`lib/appearance/shared.ts`),
+read field by field (an unknown value falls back to its default without
+touching the others; versions before 0.4.0 had no cookie, so everyone starts
+on the family defaults). The root layout renders `data-theme`,
+`data-motion`, `data-background` and the accent variables from it, and a
+few-line script in `<head>` resolves "System" before the first paint, so
+nothing flashes, on the web as on the desktop.
+
+On the desktop, **Follow Nebula Hub's appearance** (on by default) writes
+the appearance the Hub broadcasts into the same cookie, 1:1, and the window
+controls (`titleBarOverlay`) follow the chosen theme. Without the Hub, the
+app keeps its own settings.
 
 ## Internationalization
 
@@ -289,10 +350,10 @@ dictionaries, `translate()` does dot-path + `{placeholder}` lookup
 - **Client** components use `useI18n()` from `lib/i18n/client.tsx`
   (`I18nProvider` wraps the app in `app/layout.tsx`).
 
-The `LanguageToggle` in the navbar sets the `nebula-locale` cookie and
-reloads — this only changes the **interface** language. Article content
-stays in its original language; use the separate content-language filter
-in the filter bar to show only FR or only EN articles.
+The language is chosen in Settings > Appearance (it sets the
+`nebula-locale` cookie and reloads) — this only changes the **interface**
+language. Article content stays in its original language; use the language
+filter above the articles to show only French or only English ones.
 
 ## Running as a hosted web app instead
 
