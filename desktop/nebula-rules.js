@@ -178,6 +178,15 @@ function isDockPayload(value) {
 /** The page that "Detach" (Hub mode band) navigates to; caught in will-navigate, never loaded. */
 const DETACH_PATH = "/__nebula/detach";
 
+/**
+ * Hub mode (Nebula Hub ADR-032): what the docked window does for a visible `nebula.hub.dock`
+ * message. It is shown again if it was hidden, and raised above the Hub when it reappears or when
+ * the Hub asks for it.
+ */
+function dockedWindowSteps(wasVisible, raise) {
+  return { show: !wasVisible, raise: raise || !wasVisible };
+}
+
 module.exports = {
   THEMES,
   COOKIES,
@@ -191,4 +200,5 @@ module.exports = {
   chromeColors,
   externalTarget,
   isDockPayload,
+  dockedWindowSteps,
 };

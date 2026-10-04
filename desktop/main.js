@@ -30,6 +30,7 @@ const {
   externalTarget,
   hubAppearanceCookie,
   hubLanguage,
+  dockedWindowSteps,
   isDockPayload,
   themeOfCookie,
 } = require("./nebula-rules");
@@ -295,7 +296,14 @@ function openWindow(options = {}) {
       sandbox: true,
     },
   });
-  window.once("ready-to-show", () => (docked ? window.showInactive() : window.show()));
+  window.once("ready-to-show", () => {
+    if (docked) {
+      window.showInactive();
+      raiseDockedWindow(window);
+    } else {
+      window.show();
+    }
+  });
 
   // Keep external links (original article URLs) in the user's real browser
   // instead of navigating the app window away from Nebula News.
@@ -373,13 +381,25 @@ function applyDock(payload) {
       const window = mainWindow;
       if (!window || window.isDestroyed()) return undefined;
       if (!payload.visible) return window.hide();
+      const steps = dockedWindowSteps(window.isVisible(), payload.raise);
       window.setBounds(payload.bounds);
-      if (!window.isVisible()) window.showInactive();
-      if (payload.raise) window.moveTop();
+      if (steps.show) window.showInactive();
+      if (steps.raise) raiseDockedWindow(window);
       return undefined;
     })
     .catch(() => undefined);
   return dock.busy;
+}
+
+/**
+ * Brings the docked window above the Hub without taking the focus. Windows ignores moveTop() from
+ * an app without the foreground right, which is the case as soon as the Hub is active; a brief
+ * always-on-top is allowed and leaves the window just above the Hub (Nebula Hub ADR-032).
+ */
+function raiseDockedWindow(window) {
+  window.setAlwaysOnTop(true);
+  window.moveTop();
+  window.setAlwaysOnTop(false);
 }
 
 async function undock() {

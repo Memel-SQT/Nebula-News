@@ -15,6 +15,7 @@ const {
   chromeColors,
   externalTarget,
   isDockPayload,
+  dockedWindowSteps,
 } = require("./nebula-rules");
 
 const briefing = {
@@ -118,4 +119,11 @@ test("the Hub mode payload is checked", () => {
   assert.equal(isDockPayload({ state: "docked", visible: true, raise: false, bounds: { x: 1, y: 2, width: 3, height: 4 } }), true);
   assert.equal(isDockPayload({ state: "docked", visible: true, raise: false, bounds: { x: 1.5, y: 2, width: 3, height: 4 } }), false);
   assert.equal(isDockPayload(null), false);
+});
+
+test("Hub mode: a hidden docked window is shown and raised, a visible one only when the Hub asks (ADR-032)", () => {
+  assert.deepEqual(dockedWindowSteps(false, false), { show: true, raise: true });
+  assert.deepEqual(dockedWindowSteps(false, true), { show: true, raise: true });
+  assert.deepEqual(dockedWindowSteps(true, true), { show: false, raise: true });
+  assert.deepEqual(dockedWindowSteps(true, false), { show: false, raise: false });
 });

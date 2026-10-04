@@ -20,11 +20,9 @@
 
 /* Centered content column (user feedback: wide and ultrawide screens). It grows with the screen
    so a 3440 px window is used, but lines never get too long to read. */
-.workspace { --content-max: 1480px; }
-.workspace-inner { width: 100%; max-width: var(--content-max); margin-inline: auto; }
-@media (min-width: 1900px) { .workspace { --content-max: 1680px; } }
-@media (min-width: 2400px) { .workspace { --content-max: 1960px; } }
-@media (min-width: 3000px) { .workspace { --content-max: 2280px; } }
+/* The content fills the width next to the sidebar, docked in Nebula Hub as on an ultrawide
+   screen (Nebula Hub ADR-032); long texts keep their own reading width. */
+.workspace-inner { width: 100%; }
 /* Very large screens at 100 % scaling: text and controls scale up a little, everything in rem follows. */
 @media (min-width: 2400px) { html { font-size: 17px; } }
 @media (min-width: 3000px) { html { font-size: 18px; } }
