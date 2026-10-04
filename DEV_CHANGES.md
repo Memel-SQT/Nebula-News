@@ -1,5 +1,14 @@
 # Development changes
 
+## 2026-10-04 — 0.5.0: Nebula News becomes an extension of the other apps
+
+- **User request**: News must run in the background systematically, open outside the Hub only when standalone, and make its articles appear in the apps they are meant for. It should be an extension of the other apps more than an app of its own. Hub side: Nebula Hub ADR-034 (catalog `extension`, background keeper, `/docked` route).
+- **`--background`** (`BACKGROUND_SWITCH`): started by the Hub, News starts its server and Link but opens no window; closing every window no longer quits while the Hub is connected or in background mode (`quitWhenAllClosed`); a background News quits when the Hub goes away.
+- **Inside the Hub only**: every window request (start, second launch, deep link, intent) goes through `showWindow`. Connected to the Hub, News asks to be placed (`link.intent('nebula.hub', '/docked', { id: 'nebula.news' })`, its own id only) and the requested screen is loaded in the docked window (`pendingRoute`). An older Hub refuses the route, and News then opens its own window. Without the Hub: the normal window, as before.
+- **Release by the Hub** (`afterRelease`): still connected → back to the background (window destroyed, server and Link running); Hub gone and background → quit; otherwise → the normal window.
+- The "Detach" band is removed: inside the Hub, the Hub's own bar (title, back to Home) is the one shown, and News never leaves for its own window there.
+- Tests: `windowTarget`, `afterRelease`, `quitWhenAllClosed` (`desktop/nebula-rules.test.js`). Validation: typecheck, 37 tests, build.
+
 ## 2026-10-04 — 0.4.1: the window stays visible inside Nebula Hub
 
 - **Hub mode**: the docked window could stay behind Nebula Hub ("… s'affiche ici" without the page), because Windows ignores `moveTop()` from an app without the foreground right (the Hub is active). It is now raised with `raiseDockedWindow` (`setAlwaysOnTop(true)`, `moveTop()`, `setAlwaysOnTop(false)`): on `raise`, whenever it reappears, and once its page is shown. `dockedWindowSteps` (`desktop/nebula-rules.js`, tested) decides show / raise. Nebula Hub ADR-032, applied by the Hub session from its `docs/PROMPT_DOCK_FIX.md`.

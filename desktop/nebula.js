@@ -60,7 +60,17 @@ class NebulaIntegration {
         return briefing ? themeWidget(briefing, theme.key, this.language(), new Date()) : null;
       });
     }
-    await this.link.connect();
+    return this.link.connect();
+  }
+
+  /**
+   * Asks the Hub to show Nebula News inside it (Nebula Hub ADR-034). False when the Hub cannot
+   * (absent, or an older Hub without this route): the caller then opens its own window.
+   */
+  async requestDock() {
+    if (this.link.status !== "connected") return false;
+    const result = await this.link.intent("nebula.hub", "/docked", { id: "nebula.news" }).catch(() => null);
+    return Boolean(result && result.ok);
   }
 
   dispose() {

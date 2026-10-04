@@ -187,6 +187,32 @@ function dockedWindowSteps(wasVisible, raise) {
   return { show: !wasVisible, raise: raise || !wasVisible };
 }
 
+/**
+ * Nebula News is an extension of the other apps (Nebula Hub ADR-034): with the Hub, it runs
+ * without a window and shows itself inside the Hub; without the Hub, it is a normal app.
+ */
+const BACKGROUND_SWITCH = "--background";
+
+/** Where a window asked for (deep link, second launch, intent) goes. */
+function windowTarget(hubConnected) {
+  return hubConnected ? "hub" : "own-window";
+}
+
+/**
+ * What happens when the Hub releases the window (the Hub quits) or the link to it is lost:
+ * still connected → back to the background (no window); started by the Hub in the background
+ * and the Hub is gone → quit; otherwise → the normal standalone window.
+ */
+function afterRelease({ hubConnected, background }) {
+  if (hubConnected) return "background";
+  return background ? "quit" : "own-window";
+}
+
+/** Closing the last window quits the app only when it is not kept for the Hub. */
+function quitWhenAllClosed({ hubConnected, background }) {
+  return !hubConnected && !background;
+}
+
 module.exports = {
   THEMES,
   COOKIES,
@@ -201,4 +227,8 @@ module.exports = {
   externalTarget,
   isDockPayload,
   dockedWindowSteps,
+  BACKGROUND_SWITCH,
+  windowTarget,
+  afterRelease,
+  quitWhenAllClosed,
 };

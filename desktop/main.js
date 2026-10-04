@@ -30,8 +30,12 @@ const {
   externalTarget,
   hubAppearanceCookie,
   hubLanguage,
+  BACKGROUND_SWITCH,
+  afterRelease,
   dockedWindowSteps,
   isDockPayload,
+  quitWhenAllClosed,
+  windowTarget,
   themeOfCookie,
 } = require("./nebula-rules");
 
@@ -46,6 +50,12 @@ let mainWindow = null;
 let ingestTimer = null;
 let baseUrl = null;
 let nebula = null;
+/** Started by Nebula Hub to run without a window (ADR-034 of Nebula Hub). */
+const BACKGROUND = process.argv.includes(BACKGROUND_SWITCH);
+/** Connected to Nebula Hub right now: windows then open inside the Hub. */
+let hubConnected = false;
+/** The screen to show once the Hub has placed the window. */
+let pendingRoute = null;
 
 function getFreePort() {
   return new Promise((resolve, reject) => {
@@ -252,6 +262,12 @@ async function applyHubAppearance(appearance) {
 
 /** The Hub status, for the sidebar card: a cookie for the next render, an event for this one. */
 async function setHubStatus(status) {
+  hubConnected = status === "connected";
+  // Started by the Hub to feed the other apps: nothing left to do once the Hub is gone.
+  if (!hubConnected && BACKGROUND && !(mainWindow && !mainWindow.isDestroyed() && !dock.docked)) {
+    app.quit();
+    return;
+  }
   await setCookie(COOKIES.hubStatus, status === "connected" ? "connected" : "offline");
   if (mainWindow && !mainWindow.isDestroyed()) {
     void mainWindow.webContents.executeJavaScript("window.dispatchEvent(new Event('nebula-hub-status'))").catch(() => undefined);
@@ -332,6 +348,31 @@ function openWindow(options = {}) {
   return window;
 }
 
+/**
+ * Shows Nebula News: inside the Hub when it is connected (Nebula Hub ADR-034), else its own
+ * window. An older Hub that cannot place it gets the own window.
+ */
+async function showWindow(route) {
+  if (windowTarget(hubConnected) === "hub") {
+    if (dock.docked && mainWindow && !mainWindow.isDestroyed()) {
+      if (route) void mainWindow.loadURL(`${baseUrl}${route}`);
+      raiseDockedWindow(mainWindow);
+    } else {
+      pendingRoute = route ?? pendingRoute ?? "/";
+    }
+    if (await nebula.requestDock()) return;
+  }
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    openWindow({ route: route ?? pendingRoute ?? "/" });
+    pendingRoute = null;
+    return;
+  }
+  if (route) void mainWindow.loadURL(`${baseUrl}${route}`);
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+}
+
 function focusWindow() {
   if (!mainWindow || mainWindow.isDestroyed()) {
     openWindow();
@@ -347,21 +388,21 @@ function focusWindow() {
   mainWindow.focus();
 }
 
-/** Opens a route of the app (deep link, intent), keeping the window where it is. */
+/** Opens a route of the app (deep link, intent): inside the Hub when it is there. */
 function openRoute(route) {
-  focusWindow();
-  void mainWindow?.loadURL(`${baseUrl}${route}`);
+  void showWindow(route);
 }
 
 /** Electron cannot remove the frame of an open window: it is recreated, the new one first. */
 function replaceWindow(options) {
   const previous = mainWindow;
-  let route = "/";
+  let route = pendingRoute ?? "/";
   try {
     if (previous && !previous.isDestroyed()) route = new URL(previous.webContents.getURL()).pathname;
   } catch {
-    route = "/";
+    route = pendingRoute ?? "/";
   }
+  pendingRoute = null;
   openWindow({ ...options, route });
   if (previous && !previous.isDestroyed()) previous.destroy();
 }
@@ -406,6 +447,18 @@ async function undock() {
   if (!dock.docked) return;
   dock.docked = false;
   await setCookie(COOKIES.docked, "0");
+  const next = afterRelease({ hubConnected, background: BACKGROUND });
+  if (next === "quit") {
+    app.quit();
+    return;
+  }
+  if (next === "background") {
+    // Still an extension of the apps: no window, the server and Link keep running.
+    const previous = mainWindow;
+    mainWindow = null;
+    if (previous && !previous.isDestroyed()) previous.destroy();
+    return;
+  }
   replaceWindow({ docked: false, bounds: dock.normalBounds ?? undefined });
   focusWindow();
 }
@@ -437,9 +490,13 @@ async function createWindow() {
     onDock: (payload) => void applyDock(payload),
   });
 
-  // Started by a deep link (`--nebula-intent`): open that screen directly.
-  openWindow({ route: nebula.routeOfArgv(process.argv) ?? "/" });
-  await nebula.start().catch(() => undefined);
+  // Started by a deep link (`--nebula-intent`): that screen. Started by the Hub in the background:
+  // no window at all. Otherwise: inside the Hub when it is there, else the normal window.
+  const route = nebula.routeOfArgv(process.argv);
+  const status = await nebula.start().catch(() => "offline");
+  hubConnected = status === "connected";
+  if (BACKGROUND && !route) return;
+  await showWindow(route ?? "/");
 }
 
 // One instance: a second launch (or a deep link) goes to the running one.
@@ -447,13 +504,14 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on("second-instance", (_event, argv) => {
-    const route = nebula?.routeOfArgv(argv);
-    if (route) openRoute(route);
-    else focusWindow();
+    // Opening Nebula News again (Start menu, desktop, deep link): inside the Hub when it is there.
+    if (!nebula) return;
+    void showWindow(nebula.routeOfArgv(argv) ?? undefined);
   });
 
   app.on("window-all-closed", () => {
-    if (process.platform !== "darwin") app.quit();
+    if (process.platform === "darwin") return;
+    if (quitWhenAllClosed({ hubConnected, background: BACKGROUND })) app.quit();
   });
 
   app.on("before-quit", () => {

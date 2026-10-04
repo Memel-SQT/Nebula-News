@@ -45,7 +45,7 @@ of scope for a first pass. See [Adding authentication](#adding-authentication).
 
 ```
 app/
-  layout.tsx              root layout: appearance from the cookie, sidebar, Hub mode band
+  layout.tsx              root layout: appearance from the cookie, sidebar
   page.tsx                home dashboard (filters + article grid)
   briefing/page.tsx        daily briefing (one section per theme)
   theme/[theme]/page.tsx   one theme: /theme/focus, /theme/finance, /theme/tech
@@ -218,9 +218,15 @@ named pipe — never a network call. It only shares public data:
 - the **Nebula appearance** (theme, accent, background, motion, sounds,
   language), applied 1:1 while "Follow Nebula Hub's appearance" is on
   (Settings > Nebula Hub);
-- the **Hub mode**: the window can open inside the Hub's window (frameless,
-  placed by the Hub, with a "Detach" band to bring it back), and comes back to
-  normal when released or when the Hub goes away.
+- **an extension of the other apps** (since 0.5.0, Nebula Hub ADR-034): with
+  the Hub, Nebula News runs in the background without a window (the Hub starts
+  it with `--background` and restarts it if it stops), so its articles always
+  reach Clock, Finterest and the Hub's Home. Opening it (Hub launcher, Start
+  menu, a deep link) shows it **inside the Hub** (frameless window placed by
+  the Hub, `nebula://hub/docked?id=nebula.news`), never in its own window.
+  When the Hub quits, a News started in the background quits too; without the
+  Hub, or with an older Hub that cannot place it, it is a normal app with its
+  own window.
 
 "Nebula apps" in the sidebar (desktop only) opens the Hub, or its download
 page when it is not installed; the "Nebula Hub" card below it shows whether

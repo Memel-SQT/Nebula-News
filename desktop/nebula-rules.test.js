@@ -16,6 +16,10 @@ const {
   externalTarget,
   isDockPayload,
   dockedWindowSteps,
+  BACKGROUND_SWITCH,
+  windowTarget,
+  afterRelease,
+  quitWhenAllClosed,
 } = require("./nebula-rules");
 
 const briefing = {
@@ -126,4 +130,25 @@ test("Hub mode: a hidden docked window is shown and raised, a visible one only w
   assert.deepEqual(dockedWindowSteps(false, true), { show: true, raise: true });
   assert.deepEqual(dockedWindowSteps(true, true), { show: false, raise: true });
   assert.deepEqual(dockedWindowSteps(true, false), { show: false, raise: false });
+});
+
+test("extension: with the Hub, windows open inside it; without, a normal window (Nebula Hub ADR-034)", () => {
+  assert.equal(BACKGROUND_SWITCH, "--background");
+  assert.equal(windowTarget(true), "hub");
+  assert.equal(windowTarget(false), "own-window");
+});
+
+test("extension: a release keeps the app in the background, quits it, or gives the normal window", () => {
+  assert.equal(afterRelease({ hubConnected: true, background: true }), "background");
+  assert.equal(afterRelease({ hubConnected: true, background: false }), "background");
+  // Started by the Hub, the Hub is gone: nothing left to feed.
+  assert.equal(afterRelease({ hubConnected: false, background: true }), "quit");
+  // Opened by the user, the Hub is gone: the normal standalone window.
+  assert.equal(afterRelease({ hubConnected: false, background: false }), "own-window");
+});
+
+test("extension: closing the last window quits only a standalone app", () => {
+  assert.equal(quitWhenAllClosed({ hubConnected: false, background: false }), true);
+  assert.equal(quitWhenAllClosed({ hubConnected: true, background: false }), false);
+  assert.equal(quitWhenAllClosed({ hubConnected: false, background: true }), false);
 });

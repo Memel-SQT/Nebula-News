@@ -5,7 +5,6 @@ import { getShell } from "@/lib/appearance/server";
 import { THEME_BOOT_SCRIPT, accentStyleSheet } from "@/lib/appearance/shared";
 import { AppearanceProvider } from "@/components/appearance/AppearanceProvider";
 import { Sidebar } from "@/components/shell/Sidebar";
-import { DetachBand } from "@/components/shell/DetachBand";
 // The family styles, in cascade order: tokens first (nebula-design-system rule), then the
 // base elements, backgrounds, motion and controls of @nebula/design, the Hub's shell, News.
 import "@/styles/nebula/tokens.css";
@@ -67,7 +66,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <div className="app-shell">
               <Sidebar />
               <div className="workspace-column">
-                {shell.docked ? <DetachBand /> : null}
                 {children}
               </div>
             </div>
