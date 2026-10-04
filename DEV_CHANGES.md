@@ -1,5 +1,11 @@
 # Development changes
 
+## 2026-10-04 — 0.4.1: the window stays visible inside Nebula Hub
+
+- **Hub mode**: the docked window could stay behind Nebula Hub ("… s'affiche ici" without the page), because Windows ignores `moveTop()` from an app without the foreground right (the Hub is active). It is now raised with `raiseDockedWindow` (`setAlwaysOnTop(true)`, `moveTop()`, `setAlwaysOnTop(false)`): on `raise`, whenever it reappears, and once its page is shown. `dockedWindowSteps` (`desktop/nebula-rules.js`, tested) decides show / raise. Nebula Hub ADR-032, applied by the Hub session from its `docs/PROMPT_DOCK_FIX.md`.
+- **Full width**: `.workspace-inner` (`styles/news/hub-app.css`) loses its max width, docked in the Hub as on ultrawide screens.
+- Validation: typecheck, 34 tests, `next build`. `next lint` is still not configured in this repository (it offers to create a config), unchanged.
+
 ## 2026-10-03 — 0.4.0: three themes and the Nebula family design
 
 ### Content: three themes, one per app
