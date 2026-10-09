@@ -212,6 +212,12 @@ named pipe — never a network call. It only shares public data:
   `news.tech.today` (the Hub's Home). Each opens its theme
   (`nebula://news/theme/focus|finance|tech`); an app reads its widget with
   `link.query(...)` after declaring it in its own `consumes`;
+- **the "Nebula News" tab of each app** (since 0.6.0, Nebula Hub ADR-036): the
+  latest 20 articles of a theme, `news.finance.articles` (Nebula Finterest),
+  `news.focus.articles` (Nebula Clock) and `news.tech.articles` (Nebula
+  Hub), as `ArticlesV1` (title, source, date, short plain summary). Each
+  article opens in Nebula News (`nebula://news/article?id=…`); its web
+  address never leaves the app;
 - **"Your briefing is ready"** in the Hub's activity centre, once a day;
 - deep links and the intent `news.open-briefing` (`nebula://news/briefing`),
   which Nebula Clock's long breaks can offer;

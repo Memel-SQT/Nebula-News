@@ -1,5 +1,13 @@
 # Development changes
 
+## 2026-10-09 — 0.6.0: a "Nebula News" tab in each app
+
+- **User request**: each app gets a "Nebula News" tab showing its own news (Nebula Hub ADR-036).
+- `desktop/nebula-rules.js`: `THEMES` gain their `articles` capability; `themeArticles(page, themeKey, language, now)` turns a page of `/api/articles` into `ArticlesV1` (at most 20, titles 200, sources 80, summaries as plain one-line text up to 400, a `nebula://news/article?id=` link per article, articles with an unusual id or an unreadable date dropped, null when empty); `routeOfIntent` replaces the static `ROUTES` map and opens `/article/<id>` for a valid id only.
+- `desktop/nebula.js`: provides `news.focus.articles`, `news.finance.articles`, `news.tech.articles` (public queries); intents and `--nebula-intent` go through `routeOfIntent`. `desktop/main.js`: the `articles` dependency reads `/api/articles?theme=<KEY>&pageSize=20` from the app's own server.
+- `nebula.app.json`: the three queries (`ArticlesV1`) and the deep link `/article?id=`. `@nebula/link` 1.2.0 (the schema `ArticlesV1`); needs Nebula Hub 0.2.7 or later, which knows the schema.
+- Tests: manifest declares the queries and the link; lists built, bounded, cleaned and without web address; empty themes give nothing; deep links only to declared screens or a valid article id.
+
 ## 2026-10-04 — 0.5.0: Nebula News becomes an extension of the other apps
 
 - **User request**: News must run in the background systematically, open outside the Hub only when standalone, and make its articles appear in the apps they are meant for. It should be an extension of the other apps more than an app of its own. Hub side: Nebula Hub ADR-034 (catalog `extension`, background keeper, `/docked` route).

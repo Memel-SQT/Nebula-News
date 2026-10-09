@@ -39,6 +39,30 @@
       "refreshSeconds": 900
     },
     {
+      "id": "news.focus.articles",
+      "kind": "query",
+      "sensitivity": "public",
+      "title": { "fr": "Développement personnel : articles", "en": "Personal growth: articles" },
+      "description": { "fr": "Les derniers articles d'organisation, d'habitudes et de concentration, pour l'onglet « Nebula News » de Nebula Clock.", "en": "The latest articles on organization, habits and focus, for Nebula Clock's \"Nebula News\" tab." },
+      "resultSchema": "ArticlesV1"
+    },
+    {
+      "id": "news.finance.articles",
+      "kind": "query",
+      "sensitivity": "public",
+      "title": { "fr": "Finance : articles", "en": "Finance: articles" },
+      "description": { "fr": "Les derniers articles de finance et d'éducation financière, pour l'onglet « Nebula News » de Nebula Finterest.", "en": "The latest finance and financial literacy articles, for Nebula Finterest's \"Nebula News\" tab." },
+      "resultSchema": "ArticlesV1"
+    },
+    {
+      "id": "news.tech.articles",
+      "kind": "query",
+      "sensitivity": "public",
+      "title": { "fr": "Tech : articles", "en": "Tech: articles" },
+      "description": { "fr": "Les derniers articles tech et informatique, pour l'onglet « Nebula News » de Nebula Hub.", "en": "The latest tech and computing articles, for Nebula Hub's \"Nebula News\" tab." },
+      "resultSchema": "ArticlesV1"
+    },
+    {
       "id": "news.open-briefing",
       "kind": "intent",
       "sensitivity": "public",
@@ -57,6 +81,7 @@
     { "path": "/briefing", "params": {} },
     { "path": "/theme/focus", "params": {} },
     { "path": "/theme/finance", "params": {} },
-    { "path": "/theme/tech", "params": {} }
+    { "path": "/theme/tech", "params": {} },
+    { "path": "/article", "params": { "id": "text" } }
   ]
 }

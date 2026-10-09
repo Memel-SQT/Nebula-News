@@ -8,6 +8,9 @@ const {
   THEMES,
   headlinesWidget,
   themeWidget,
+  themeArticles,
+  routeOfIntent,
+  ARTICLES_PER_TAB,
   briefingReadyNotification,
   hubAppearanceCookie,
   hubLanguage,
@@ -68,7 +71,54 @@ test("the manifest is valid and declares every theme widget and screen", () => {
   for (const theme of THEMES) {
     assert.ok(raw.provides.some((capability) => capability.id === theme.widget && capability.kind === "widget" && capability.sensitivity === "public"));
     assert.ok(raw.deepLinks.some((link) => link.path === `/theme/${theme.slug}`));
+    assert.ok(raw.provides.some((capability) => capability.id === theme.articles && capability.kind === "query" && capability.sensitivity === "public" && capability.resultSchema === "ArticlesV1"));
   }
+  assert.ok(raw.deepLinks.some((link) => link.path === "/article" && link.params.id === "text"));
+});
+
+const page = {
+  items: [
+    { id: "clx0abc123def456", title: "Livret A : ce qui change", summary: "<p>Le taux   baisse\nen février.</p>", publishedAt: "2026-10-09T06:00:00.000Z", source: { name: "La finance pour tous" } },
+    { id: "clx0abc123def457", title: "Sans résumé", summary: null, publishedAt: "2026-10-08T06:00:00.000Z", source: { name: "Les Échos" } },
+    { id: "../../etc", title: "Identifiant suspect", publishedAt: "2026-10-08T06:00:00.000Z", source: { name: "x" } },
+    { id: "clx0abc123def458", title: "Date illisible", publishedAt: "hier", source: { name: "x" } },
+  ],
+};
+
+test("the Nebula News tab of an app lists the latest articles of its theme (ArticlesV1)", () => {
+  const now = new Date("2026-10-09T08:00:00.000Z");
+  const list = themeArticles(page, "FINANCE", "fr", now);
+  assert.equal(list.title, "Finance");
+  assert.equal(list.updatedAt, "2026-10-09T08:00:00.000Z");
+  assert.deepEqual(list.items, [
+    { title: "Livret A : ce qui change", source: "La finance pour tous", publishedAt: "2026-10-09T06:00:00.000Z", summary: "Le taux baisse en février.", deepLink: "nebula://news/article?id=clx0abc123def456" },
+    { title: "Sans résumé", source: "Les Échos", publishedAt: "2026-10-08T06:00:00.000Z", deepLink: "nebula://news/article?id=clx0abc123def457" },
+  ]);
+  // Nothing of the article's web address goes out.
+  assert.ok(!JSON.stringify(list).includes("http"));
+  assert.equal(themeArticles(page, "TECH", "en", now).title, "Tech & computing");
+});
+
+test("the Nebula News tab is bounded, and empty themes give nothing", () => {
+  const many = { items: Array.from({ length: 30 }, (_, index) => ({ id: `clx0abc123def${String(index).padStart(3, "0")}`, title: "t".repeat(300), summary: "s".repeat(600), publishedAt: "2026-10-09T06:00:00.000Z", source: { name: "n".repeat(100) } })) };
+  const list = themeArticles(many, "FOCUS", "fr", new Date());
+  assert.equal(list.items.length, ARTICLES_PER_TAB);
+  assert.equal(list.items[0].title.length, 200);
+  assert.equal(list.items[0].source.length, 80);
+  assert.equal(list.items[0].summary.length, 400);
+  assert.equal(themeArticles({ items: [] }, "FOCUS", "fr", new Date()), null);
+  assert.equal(themeArticles(null, "FOCUS", "fr", new Date()), null);
+  assert.equal(themeArticles(page, "SPORTS", "fr", new Date()), null);
+});
+
+test("deep links open a declared screen or one article, nothing else", () => {
+  assert.equal(routeOfIntent("/", {}), "/");
+  assert.equal(routeOfIntent("/briefing", {}), "/briefing");
+  assert.equal(routeOfIntent("/theme/finance", {}), "/theme/finance");
+  assert.equal(routeOfIntent("/article", { id: "clx0abc123def456" }), "/article/clx0abc123def456");
+  assert.equal(routeOfIntent("/article", { id: "../settings" }), null);
+  assert.equal(routeOfIntent("/article", {}), null);
+  assert.equal(routeOfIntent("/settings", {}), null);
 });
 
 test("no widget before the first briefing, and long titles are cut", () => {

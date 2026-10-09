@@ -1,6 +1,7 @@
 // Pure rules of the Nebula Hub integration (Nebula Link), kept apart from Electron so they are
 // tested with `node --test desktop/` (see nebula-rules.test.js). Only public data is shared: the
-// titles and sources of the day's top three stories, and "your briefing is ready".
+// titles and sources of the day's top three stories, the latest articles of each theme (title,
+// source, date, short summary) for the "Nebula News" tab of each app, and "your briefing is ready".
 
 const clip = (text, max) => (text.length <= max ? text : `${text.slice(0, max - 1)}…`);
 
@@ -27,10 +28,15 @@ const TEXTS = {
  * nebula.app.json.
  */
 const THEMES = [
-  { key: "FOCUS", slug: "focus", widget: "news.focus.today" },
-  { key: "FINANCE", slug: "finance", widget: "news.finance.today" },
-  { key: "TECH", slug: "tech", widget: "news.tech.today" },
+  { key: "FOCUS", slug: "focus", widget: "news.focus.today", articles: "news.focus.articles" },
+  { key: "FINANCE", slug: "finance", widget: "news.finance.today", articles: "news.finance.articles" },
+  { key: "TECH", slug: "tech", widget: "news.tech.today", articles: "news.tech.articles" },
 ];
+
+/** At most this many articles in an app's "Nebula News" tab (ArticlesV1 allows 20). */
+const ARTICLES_PER_TAB = 20;
+/** An article id (cuid): anything else is never turned into a link or a route. */
+const ARTICLE_ID = /^[a-z0-9]{6,40}$/i;
 
 function texts(language) {
   return TEXTS[language === "en" ? "en" : "fr"];
@@ -80,6 +86,50 @@ function themeWidget(briefing, themeKey, language, now) {
   if (!theme) return null;
   const stories = storiesOf(briefing).filter((story) => Array.isArray(story?.themes) && story.themes.includes(theme.key));
   return widgetOf(stories, texts(language).themes[theme.key], briefing, language, `nebula://news/theme/${theme.slug}`, now);
+}
+
+/** Plain text of a summary: no markup, no control character, one line, bounded. */
+function plainSummary(summary) {
+  if (typeof summary !== "string") return null;
+  const text = summary.replace(/<[^>]*>/g, " ").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
+  return text ? clip(text, 400) : null;
+}
+
+/**
+ * `news.focus.articles`, `news.finance.articles`, `news.tech.articles` (ArticlesV1): the latest
+ * articles of one theme (the page of /api/articles, newest first), for the "Nebula News" tab of
+ * that theme's app. Each article opens in Nebula News (`nebula://news/article?id=…`); its web
+ * address never leaves the app. Null when the theme has no article yet.
+ */
+function themeArticles(page, themeKey, language, now) {
+  const theme = THEMES.find((candidate) => candidate.key === themeKey);
+  if (!theme) return null;
+  const items = [];
+  for (const article of Array.isArray(page?.items) ? page.items : []) {
+    const id = String(article?.id ?? "");
+    const publishedAt = new Date(article?.publishedAt ?? "");
+    if (!ARTICLE_ID.test(id) || Number.isNaN(publishedAt.getTime())) continue;
+    const item = {
+      title: clip(String(article?.title ?? "").trim() || "—", 200),
+      source: clip(String(article?.source?.name ?? "").trim() || "—", 80),
+      publishedAt: publishedAt.toISOString(),
+      deepLink: `nebula://news/article?id=${id}`,
+    };
+    const summary = plainSummary(article?.summary);
+    if (summary) item.summary = summary;
+    items.push(item);
+    if (items.length === ARTICLES_PER_TAB) break;
+  }
+  if (items.length === 0) return null;
+  return { title: texts(language).themes[theme.key], updatedAt: now.toISOString(), items };
+}
+
+/** The screen a deep link opens: a declared path, or one article by its id. */
+function routeOfIntent(intentPath, params) {
+  if (intentPath === "/article") return ARTICLE_ID.test(String(params?.id ?? "")) ? `/article/${params.id}` : null;
+  if (intentPath === "/" || intentPath === "/briefing") return intentPath;
+  const theme = THEMES.find((candidate) => `/theme/${candidate.slug}` === intentPath);
+  return theme ? intentPath : null;
 }
 
 /** The "briefing ready" notification, at most once a day, when the briefing has stories. */
@@ -219,6 +269,9 @@ module.exports = {
   DETACH_PATH,
   headlinesWidget,
   themeWidget,
+  themeArticles,
+  routeOfIntent,
+  ARTICLES_PER_TAB,
   briefingReadyNotification,
   hubAppearanceCookie,
   hubLanguage,

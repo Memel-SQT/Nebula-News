@@ -10,13 +10,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { NebulaLink } = require("@nebula/link");
-const { THEMES, headlinesWidget, themeWidget, briefingReadyNotification, hubLanguage } = require("./nebula-rules");
-
-const ROUTES = {
-  "/": "/",
-  "/briefing": "/briefing",
-  ...Object.fromEntries(THEMES.map((theme) => [`/theme/${theme.slug}`, `/theme/${theme.slug}`])),
-};
+const { THEMES, headlinesWidget, themeWidget, themeArticles, routeOfIntent, briefingReadyNotification, hubLanguage } = require("./nebula-rules");
 
 class NebulaIntegration {
   constructor(deps) {
@@ -46,7 +40,7 @@ class NebulaIntegration {
       if (status === "connected") void this.briefingMaybeReady();
     });
     this.link.onIntent((intent) => {
-      const route = ROUTES[intent.path];
+      const route = routeOfIntent(intent.path, intent.params);
       if (route) this.deps.openRoute(route);
     });
     this.link.provide("news.headlines.today", async () => {
@@ -58,6 +52,11 @@ class NebulaIntegration {
       this.link.provide(theme.widget, async () => {
         const briefing = await this.deps.briefing().catch(() => null);
         return briefing ? themeWidget(briefing, theme.key, this.language(), new Date()) : null;
+      });
+      // The "Nebula News" tab of that theme's app (Nebula Hub ADR-036): the latest articles.
+      this.link.provide(theme.articles, async () => {
+        const page = await this.deps.articles(theme.key).catch(() => null);
+        return page ? themeArticles(page, theme.key, this.language(), new Date()) : null;
       });
     }
     return this.link.connect();
@@ -85,7 +84,7 @@ class NebulaIntegration {
   /** The route a `--nebula-intent` argument asks for, if it is one of ours. */
   routeOfArgv(argv) {
     const intent = NebulaLink.intentFromArgv(argv, this.link.manifest);
-    return intent ? ROUTES[intent.path] ?? null : null;
+    return intent ? routeOfIntent(intent.path, intent.params) : null;
   }
 
   /** After an ingestion: announces today's briefing to the Hub, once a day. */

@@ -483,6 +483,7 @@ async function createWindow() {
       : path.join(__dirname, "..", "nebula.app.json"),
     settingsPath: path.join(app.getPath("userData"), "nebula-hub.json"),
     briefing: () => getJson("/api/briefing/today"),
+    articles: (themeKey) => getJson(`/api/articles?theme=${encodeURIComponent(themeKey)}&pageSize=20`),
     language: () => (app.getLocale().startsWith("en") ? "en" : "fr"),
     openRoute,
     onAppearance: (appearance) => void applyHubAppearance(appearance),
