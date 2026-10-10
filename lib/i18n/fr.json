@@ -106,6 +106,7 @@
     "theme": "Thème",
     "language": "Langue",
     "glassHint": "Astuce : le verre liquide est à son meilleur avec l’arrière-plan « Aurore boréale ».",
+    "packAccentHint": "Ce thème a ses propres couleurs : les couleurs d’accent ne s’y appliquent pas.",
     "accent": "Couleurs d’accent",
     "accentPrimary": "Couleur principale",
     "accentSecondary": "Couleur secondaire",

@@ -1,5 +1,13 @@
 # Development changes
 
+## 2026-10-10 — 0.7.0: appearance packs shared by installed Nebula apps
+
+- **Appearance packs** (Nebula Hub NEBULA_LINK.md § 18, ADR-035): an installed Nebula app can share extra themes, display names and logos with the family.
+- `lib/appearance/packs.ts` (pure): `packShellOf` (the themes offered, the chosen one with its style sheet, this app's name and logo), `packStyleSheet` (`html:root[data-pack-theme='…'][data-theme]{tokens;color-scheme}`, outranking the theme blocks and the accent sheet; names and values already checked by `@nebula/link`), `packBaseTheme`, `packLabel`, cookie `nebula-pack-theme`. `lib/appearance/packs-server.ts` reads the packs from `NEBULA_APPEARANCE_PACKS_DIR` (given by desktop/main.js; none on the hosted web version).
+- Rendering: `getShell` carries `pack`; the layout draws the pack theme over the built-in theme of its scheme (`data-theme` / `data-theme-choice` = that theme, `data-pack-theme`, a `<style id="nebula-pack">`), so nothing flashes; `AppearanceProvider` keeps it and offers `setPackTheme`; Settings lists the pack themes after the built-in ones (accent colours do not apply to them, a note says so); the sidebar shows the pack's name and logo for this app.
+- `desktop/main.js`: the packs folder (next to a test-mode Hub's session file, or the family's shared folder) for itself and the server; an appearance from the Hub naming a pack theme installed here goes to the pack cookie (the appearance cookie keeps its theme), a built-in theme clears it (`hubPackTheme`); the window chrome takes the pack theme's colours (`packChrome`).
+- Tests: `lib/appearance/packs.test.ts` (chosen theme, name and logo; style sheet; Hub mapping and window colours). Checked on the dev server with a test pack: offered in Settings, applied (colours, name, logo), back to a built-in theme cleanly.
+
 ## 2026-10-09 — 0.6.0: a "Nebula News" tab in each app
 
 - **User request**: each app gets a "Nebula News" tab showing its own news (Nebula Hub ADR-036).

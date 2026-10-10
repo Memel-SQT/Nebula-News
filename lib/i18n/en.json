@@ -106,6 +106,7 @@
     "theme": "Theme",
     "language": "Language",
     "glassHint": "Tip: liquid glass looks its best with the “Aurora” background.",
+    "packAccentHint": "This theme has its own colors: accent colors do not apply to it.",
     "accent": "Accent colors",
     "accentPrimary": "Main color",
     "accentSecondary": "Secondary color",

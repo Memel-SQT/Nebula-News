@@ -3,6 +3,7 @@ import { getDictionary, getLocale } from "@/lib/i18n";
 import { I18nProvider } from "@/lib/i18n/client";
 import { getShell } from "@/lib/appearance/server";
 import { THEME_BOOT_SCRIPT, accentStyleSheet } from "@/lib/appearance/shared";
+import { packBaseTheme } from "@/lib/appearance/packs";
 import { AppearanceProvider } from "@/components/appearance/AppearanceProvider";
 import { Sidebar } from "@/components/shell/Sidebar";
 // The family styles, in cascade order: tokens first (nebula-design-system rule), then the
@@ -41,12 +42,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const dict = getDictionary(locale);
   const { appearance } = shell;
   const accent = accentStyleSheet(appearance);
+  // A theme of an installed appearance pack is drawn over the built-in theme of its scheme.
+  const pack = shell.pack.active;
+  const themeChoice = pack ? packBaseTheme(pack.scheme) : appearance.theme;
 
   return (
     <html
       lang={locale}
-      data-theme={appearance.theme === "system" ? undefined : appearance.theme}
-      data-theme-choice={appearance.theme}
+      data-theme={themeChoice === "system" ? undefined : themeChoice}
+      data-theme-choice={themeChoice}
+      data-pack-theme={pack?.id}
       data-motion={appearance.motion}
       data-background={appearance.background}
       data-docked={shell.docked ? "1" : undefined}
@@ -56,6 +61,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
         {accent ? <style id="nebula-accent" dangerouslySetInnerHTML={{ __html: accent }} /> : null}
+        {pack ? <style id="nebula-pack" dangerouslySetInnerHTML={{ __html: pack.css }} /> : null}
       </head>
       <body>
         <I18nProvider locale={locale} dict={dict}>

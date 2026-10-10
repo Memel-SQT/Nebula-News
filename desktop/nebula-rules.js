@@ -155,6 +155,7 @@ const COOKIES = {
   followHub: "nebula-follow-hub",
   hubStatus: "nebula-hub-status",
   docked: "nebula-docked",
+  packTheme: "nebula-pack-theme",
 };
 
 /** The fields of the family appearance the app stores (the language has its own cookie). */
@@ -180,11 +181,35 @@ function hubLanguage(appearance) {
   return appearance?.language === "fr" || appearance?.language === "en" ? appearance.language : null;
 }
 
+const BUILT_IN_THEMES = ["nebula-dark", "nebula-light", "glass-dark", "glass-light", "system"];
+
+/**
+ * Appearance packs (Nebula Hub NEBULA_LINK.md § 18): the pack theme for a theme Nebula Hub sent.
+ * The id when one of the installed packs has it, "" for a built-in theme (the pack theme is
+ * left), null when the Hub sent no theme this app knows (nothing changes).
+ */
+function hubPackTheme(appearance, packs) {
+  const theme = appearance?.theme;
+  if (typeof theme !== "string") return null;
+  if ((packs ?? []).some((pack) => (pack?.themes ?? []).some((candidate) => candidate?.id === theme))) return theme;
+  return BUILT_IN_THEMES.includes(theme) ? "" : null;
+}
+
+/** Native window colours of a pack theme, if one of the installed packs has it. */
+function packChrome(packs, themeId) {
+  if (!themeId) return null;
+  for (const pack of packs ?? []) {
+    const theme = (pack?.themes ?? []).find((candidate) => candidate?.id === themeId);
+    if (theme?.chrome) return theme.chrome;
+  }
+  return null;
+}
+
 /** The theme chosen in the appearance cookie ("system" when absent or unreadable). */
 function themeOfCookie(raw) {
   try {
     const theme = JSON.parse(decodeURIComponent(raw ?? ""))?.theme;
-    return ["nebula-dark", "nebula-light", "glass-dark", "glass-light", "system"].includes(theme) ? theme : "system";
+    return BUILT_IN_THEMES.includes(theme) ? theme : "system";
   } catch {
     return "system";
   }
@@ -275,6 +300,8 @@ module.exports = {
   briefingReadyNotification,
   hubAppearanceCookie,
   hubLanguage,
+  hubPackTheme,
+  packChrome,
   themeOfCookie,
   chromeColors,
   externalTarget,

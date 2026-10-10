@@ -5,6 +5,7 @@ import { ACCENT_PRESETS, BACKGROUNDS, DEFAULT_APPEARANCE, MOTIONS, type Backgrou
 import { Icon, type IconName } from "@/lib/nebula-design/Icon";
 import { playSound } from "@/lib/nebula-design/sound";
 import { THEMES, isGlassTheme } from "@/lib/nebula-design/theme";
+import { packLabel } from "@/lib/appearance/packs";
 import { useI18n } from "@/lib/i18n/client";
 import { useAppearance } from "@/components/appearance/AppearanceProvider";
 import type { Locale } from "@/types";
@@ -26,7 +27,9 @@ const LANGUAGE_LABELS: Record<Locale, string> = { fr: "Français", en: "English"
 
 export function SettingsPanel() {
   const { t, locale, setLocale } = useI18n();
-  const { appearance, resolvedTheme, setAppearance, desktop, hubConnected, followHub, setFollowHub } = useAppearance();
+  const { appearance, resolvedTheme, setAppearance, desktop, hubConnected, followHub, setFollowHub, pack, setPackTheme } = useAppearance();
+  // A theme shared by an installed Nebula app (Nebula Hub NEBULA_LINK.md § 18), when one is chosen.
+  const packTheme = pack.active?.id ?? null;
   // Following a connected Hub: its appearance wins, the local controls wait.
   const followed = desktop && followHub && hubConnected;
 
@@ -41,8 +44,16 @@ export function SettingsPanel() {
           <p className="settings-label" id="settings-theme-label">{t("settings.theme")}</p>
           <div className="segmented" role="radiogroup" aria-labelledby="settings-theme-label">
             {THEMES.map((theme) => (
-              <button key={theme} type="button" role="radio" aria-checked={appearance.theme === theme} className={appearance.theme === theme ? "active" : ""} data-sound="toggle" onClick={() => setAppearance({ theme })}>
+              <button key={theme} type="button" role="radio" aria-checked={!packTheme && appearance.theme === theme} className={!packTheme && appearance.theme === theme ? "active" : ""} data-sound="toggle" onClick={() => {
+                if (packTheme) setPackTheme(null);
+                setAppearance({ theme });
+              }}>
                 {t(`appearance.theme.${theme}`)}
+              </button>
+            ))}
+            {pack.themes.map((theme) => (
+              <button key={theme.id} type="button" role="radio" aria-checked={packTheme === theme.id} className={packTheme === theme.id ? "active" : ""} data-sound="toggle" onClick={() => setPackTheme(theme.id)}>
+                {packLabel(theme.label, locale)}
               </button>
             ))}
           </div>
@@ -60,6 +71,9 @@ export function SettingsPanel() {
           </div>
 
           <p className="settings-label" id="settings-accent-label">{t("settings.accent")}</p>
+          {packTheme ? (
+            <small className="path-note settings-hint"><Icon name="info" size={14} />{t("settings.packAccentHint")}</small>
+          ) : null}
           <div className="swatch-row" role="radiogroup" aria-labelledby="settings-accent-label">
             {ACCENT_PRESETS.map((preset) => (
               <button

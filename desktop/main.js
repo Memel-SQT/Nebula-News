@@ -23,6 +23,7 @@ const net = require("node:net");
 const http = require("node:http");
 const { spawn } = require("node:child_process");
 const { NebulaIntegration } = require("./nebula");
+const { defaultAppearancePackDir, readAppearancePacks } = require("@nebula/link");
 const {
   COOKIES,
   DETACH_PATH,
@@ -30,6 +31,8 @@ const {
   externalTarget,
   hubAppearanceCookie,
   hubLanguage,
+  hubPackTheme,
+  packChrome,
   BACKGROUND_SWITCH,
   afterRelease,
   dockedWindowSteps,
@@ -129,6 +132,7 @@ async function startServer() {
       PORT: String(port),
       HOSTNAME: "127.0.0.1",
       DATABASE_URL: `file:${dbPath}`,
+      NEBULA_APPEARANCE_PACKS_DIR: PACK_DIR,
     },
     stdio: "inherit",
     windowsHide: true,
@@ -205,6 +209,25 @@ const dock = { docked: false, normalBounds: null, busy: Promise.resolve() };
 
 /** The theme chosen in the appearance cookie, kept in step by the cookie listener. */
 let windowTheme = "system";
+/** The pack theme in use ("" = a built-in theme), from its cookie. */
+let windowPackTheme = "";
+
+/**
+ * Appearance packs of installed Nebula apps (Nebula Hub NEBULA_LINK.md § 18): next to a test-mode
+ * Hub's session file, or the family's shared folder. The local server reads the same folder.
+ */
+const PACK_DIR = process.env.NEBULA_LINK_SESSION_FILE
+  ? path.join(path.dirname(process.env.NEBULA_LINK_SESSION_FILE), "appearance")
+  : defaultAppearancePackDir();
+
+/** The valid packs whose owner is installed (checked by @nebula/link); never throws. */
+function packsNow() {
+  try {
+    return readAppearancePacks({ directory: PACK_DIR });
+  } catch {
+    return [];
+  }
+}
 /** The last appearance Nebula Hub broadcast, applied again when "follow" is turned back on. */
 let lastHubAppearance = null;
 
@@ -223,7 +246,7 @@ function setCookie(name, value) {
 }
 
 function chrome() {
-  return chromeColors(windowTheme, nativeTheme.shouldUseDarkColors);
+  return packChrome(packsNow(), windowPackTheme) ?? chromeColors(windowTheme, nativeTheme.shouldUseDarkColors);
 }
 
 /** Transparent overlay: the page's own background (and its animated glow) shows behind the controls. */
@@ -247,7 +270,14 @@ async function applyHubAppearance(appearance) {
   lastHubAppearance = appearance;
   if (!baseUrl || (await cookieValue(COOKIES.followHub)) === "0") return;
   let changed = false;
-  const value = hubAppearanceCookie(appearance);
+  // A pack theme installed here goes to its own cookie; the appearance cookie keeps its theme.
+  const packTheme = hubPackTheme(appearance, packsNow());
+  if (packTheme !== null && packTheme !== ((await cookieValue(COOKIES.packTheme)) ?? "")) {
+    await setCookie(COOKIES.packTheme, packTheme);
+    changed = true;
+  }
+  const kept = packTheme ? { ...appearance, theme: themeOfCookie(await cookieValue(COOKIES.appearance)) } : appearance;
+  const value = hubAppearanceCookie(kept);
   if (value && value !== (await cookieValue(COOKIES.appearance))) {
     await setCookie(COOKIES.appearance, value);
     changed = true;
@@ -279,6 +309,10 @@ function watchCookies() {
     if (removed) return;
     if (cookie.name === COOKIES.appearance) {
       windowTheme = themeOfCookie(cookie.value);
+      applyWindowTheme();
+    }
+    if (cookie.name === COOKIES.packTheme) {
+      windowPackTheme = cookie.value;
       applyWindowTheme();
     }
     // Following the Hub again: its last appearance applies at once.
@@ -473,6 +507,7 @@ async function createWindow() {
   await setCookie(COOKIES.docked, "0");
   await setCookie(COOKIES.hubStatus, "offline");
   windowTheme = themeOfCookie(await cookieValue(COOKIES.appearance));
+  windowPackTheme = (await cookieValue(COOKIES.packTheme)) ?? "";
   watchCookies();
 
   nebula = new NebulaIntegration({

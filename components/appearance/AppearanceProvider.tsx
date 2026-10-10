@@ -16,10 +16,13 @@ import {
   type StoredAppearance,
 } from "@/lib/appearance/shared";
 import type { Shell } from "@/lib/appearance/server";
+import { PACK_THEME_COOKIE, packBaseTheme } from "@/lib/appearance/packs";
 
 type AppearanceContextValue = Shell & {
   resolvedTheme: ResolvedTheme;
   setAppearance: (patch: Partial<StoredAppearance>) => void;
+  /** A theme of an installed appearance pack, or null for the built-in theme. */
+  setPackTheme: (themeId: string | null) => void;
   setFollowHub: (follow: boolean) => void;
 };
 
@@ -60,14 +63,18 @@ export function AppearanceProvider({ shell, children }: { shell: Shell; children
     return () => media.removeEventListener("change", onChange);
   }, []);
 
-  const resolvedTheme = resolveTheme(appearance.theme, prefersDark);
+  // A pack theme is drawn over the built-in theme of its scheme (the server wrote its style sheet).
+  const packTheme = shell.pack.active;
+  const resolvedTheme = packTheme ? packBaseTheme(packTheme.scheme) : resolveTheme(appearance.theme, prefersDark);
 
   useLayoutEffect(() => {
     const root = document.documentElement;
-    root.dataset.themeChoice = appearance.theme;
+    root.dataset.themeChoice = packTheme ? resolvedTheme : appearance.theme;
     root.dataset.theme = resolvedTheme;
+    if (packTheme) root.dataset.packTheme = packTheme.id;
+    else delete root.dataset.packTheme;
     applyAppearance(root, appearance, resolvedTheme);
-  }, [appearance, resolvedTheme]);
+  }, [appearance, resolvedTheme, packTheme]);
 
   useEffect(() => {
     configureSounds({ enabled: appearance.soundEnabled, volume: appearance.soundVolume });
@@ -98,14 +105,22 @@ export function AppearanceProvider({ shell, children }: { shell: Shell; children
     [router]
   );
 
+  const setPackTheme = useCallback(
+    (themeId: string | null) => {
+      document.cookie = cookieString(PACK_THEME_COOKIE, themeId ?? "");
+      router.refresh();
+    },
+    [router]
+  );
+
   const setFollowHub = useCallback((follow: boolean) => {
     setFollow(follow);
     document.cookie = cookieString(FOLLOW_HUB_COOKIE, follow ? "1" : "0");
   }, []);
 
   const value = useMemo(
-    () => ({ ...shell, appearance, followHub, hubConnected, resolvedTheme, setAppearance, setFollowHub }),
-    [shell, appearance, followHub, hubConnected, resolvedTheme, setAppearance, setFollowHub]
+    () => ({ ...shell, appearance, followHub, hubConnected, resolvedTheme, setAppearance, setPackTheme, setFollowHub }),
+    [shell, appearance, followHub, hubConnected, resolvedTheme, setAppearance, setPackTheme, setFollowHub]
   );
 
   return (

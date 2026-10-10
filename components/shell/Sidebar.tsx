@@ -23,7 +23,8 @@ const GROUP_TITLES: Record<Exclude<NavGroup, "system">, string> = {
 export function Sidebar() {
   const { t } = useI18n();
   const pathname = usePathname();
-  const { desktop, hubConnected } = useAppearance();
+  // The name and logo an installed appearance pack gives this app (Nebula Hub NEBULA_LINK.md § 18).
+  const { desktop, hubConnected, pack } = useAppearance();
   const version = process.env.NEXT_PUBLIC_APP_VERSION ?? "";
 
   const navItem = (section: NavSection) => {
@@ -48,9 +49,9 @@ export function Sidebar() {
     <aside className="sidebar nebula-surface nebula-sidebar">
       <div className="brand-lockup">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="hub-mark" src="/nebula-mark.svg" alt="" width={40} height={40} />
+        <img className="hub-mark" src={pack.markUrl ?? "/nebula-mark.svg"} alt="" width={40} height={40} />
         <div>
-          <strong>{t("app.name")}</strong>
+          <strong>{pack.name ?? t("app.name")}</strong>
           <span>{t("app.tagline")}</span>
         </div>
       </div>

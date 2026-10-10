@@ -218,6 +218,9 @@ named pipe — never a network call. It only shares public data:
   Hub), as `ArticlesV1` (title, source, date, short plain summary). Each
   article opens in Nebula News (`nebula://news/article?id=…`); its web
   address never leaves the app;
+- **appearance packs** (since 0.7.0): themes shared by an installed Nebula app
+  appear in Settings after the built-in ones, with the name and logo that app
+  gives Nebula News; without it, nothing changes;
 - **"Your briefing is ready"** in the Hub's activity centre, once a day;
 - deep links and the intent `news.open-briefing` (`nebula://news/briefing`),
   which Nebula Clock's long breaks can offer;

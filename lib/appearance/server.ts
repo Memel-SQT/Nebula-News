@@ -8,6 +8,8 @@ import {
   parseAppearance,
   type StoredAppearance,
 } from "./shared";
+import { PACK_THEME_COOKIE, type PackShell } from "./packs";
+import { readPackShell } from "./packs-server";
 
 export type Shell = {
   appearance: StoredAppearance;
@@ -19,6 +21,8 @@ export type Shell = {
   hubConnected: boolean;
   /** Desktop: the appearance follows Nebula Hub's (on unless the user turned it off). */
   followHub: boolean;
+  /** Desktop: themes shared by installed Nebula apps, and the one chosen (Nebula Hub NEBULA_LINK.md § 18). */
+  pack: PackShell;
 };
 
 /** Everything the root layout needs to render the shell, from the request alone. */
@@ -31,5 +35,6 @@ export async function getShell(): Promise<Shell> {
     docked: desktop && jar.get(DOCKED_COOKIE)?.value === "1",
     hubConnected: desktop && jar.get(HUB_STATUS_COOKIE)?.value === "connected",
     followHub: jar.get(FOLLOW_HUB_COOKIE)?.value !== "0",
+    pack: readPackShell(jar.get(PACK_THEME_COOKIE)?.value || undefined),
   };
 }
