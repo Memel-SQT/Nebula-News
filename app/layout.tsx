@@ -41,9 +41,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const [locale, shell] = await Promise.all([getLocale(), getShell()]);
   const dict = getDictionary(locale);
   const { appearance } = shell;
-  const accent = accentStyleSheet(appearance);
-  // A theme of an installed appearance pack is drawn over the built-in theme of its scheme.
+  // A theme of an installed appearance pack is drawn over the built-in theme of its scheme, with
+  // its own colours: no accent sheet then (the client applies none either).
   const pack = shell.pack.active;
+  const accent = pack ? null : accentStyleSheet(appearance);
   const themeChoice = pack ? packBaseTheme(pack.scheme) : appearance.theme;
 
   return (

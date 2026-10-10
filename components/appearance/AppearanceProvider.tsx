@@ -73,7 +73,9 @@ export function AppearanceProvider({ shell, children }: { shell: Shell; children
     root.dataset.theme = resolvedTheme;
     if (packTheme) root.dataset.packTheme = packTheme.id;
     else delete root.dataset.packTheme;
-    applyAppearance(root, appearance, resolvedTheme);
+    // A pack theme brings its own colours: the accent colours never apply over it (inline
+    // variables would win over its style sheet), exactly like Nebula Hub (NEBULA_LINK.md § 18).
+    applyAppearance(root, appearance, resolvedTheme, Boolean(packTheme));
   }, [appearance, resolvedTheme, packTheme]);
 
   useEffect(() => {

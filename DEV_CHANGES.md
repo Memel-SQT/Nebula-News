@@ -1,5 +1,11 @@
 # Development changes
 
+## 2026-10-10 — 0.7.1: a pack theme keeps its own colours
+
+- **User report**: Nebula News did not follow the Hub's theme colours. Reproduced with the Hub on a pack theme and the "sakura" accent: the pack's page colours applied, but the accent stayed pink. `applyAppearance` writes the accent variables inline on <html>, which wins over the pack's style sheet (the Hub, Finterest and Clock apply the pack after the accent, so they were not affected).
+- `AppearanceProvider`: `applyAppearance(root, appearance, resolvedTheme, Boolean(packTheme))` (the existing `frozenTheme` switch): no inline accent under a pack theme. `app/layout.tsx`: no accent style sheet either. As in Nebula Hub, accent colours do not apply to a pack theme.
+- Checked on the dev server with the "sakura" accent and a pack theme: `--accent` and the glows come from the pack, no inline accent.
+
 ## 2026-10-10 — 0.7.0: appearance packs shared by installed Nebula apps
 
 - **Appearance packs** (Nebula Hub NEBULA_LINK.md § 18, ADR-035): an installed Nebula app can share extra themes, display names and logos with the family.
