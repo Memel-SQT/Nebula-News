@@ -197,6 +197,11 @@ npm run electron:dev
   `app/api/ingest/route.ts` — no `INGEST_SECRET` means open access); the
   build strips `.env*` from the packaged bundle so nothing from your local
   dev environment leaks into the installer regardless.
+- **No save in clear text.** Nebula News writes no backup or export: its
+  database lives in its own data folder. A save written outside it one day
+  (backup, export, copy) must be sealed with the Nebula family's save key
+  (`@nebula/link` `sealSave`, Nebula Hub ADR-040), never in clear text, and
+  any reader must accept sealed and older plain files.
 
 ### Nebula Hub (optional)
 

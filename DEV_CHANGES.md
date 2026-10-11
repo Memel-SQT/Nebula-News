@@ -1,5 +1,9 @@
 # Development changes
 
+## 2026-10-11 — Rule: no save in clear text (docs only)
+
+- **User request** for the whole family: no save file may stay in clear text (Nebula Hub ADR-040, NEBULA_LINK.md § 19). Nebula News writes none today (its database stays in its data folder); the README states the rule for any future backup or export: sealed with the family's save key (`@nebula/link` `sealSave`), never plain, readers accepting sealed and older plain files. No code change, no version.
+
 ## 2026-10-10 — 0.7.1: a pack theme keeps its own colours
 
 - **User report**: Nebula News did not follow the Hub's theme colours. Reproduced with the Hub on a pack theme and the "sakura" accent: the pack's page colours applied, but the accent stayed pink. `applyAppearance` writes the accent variables inline on <html>, which wins over the pack's style sheet (the Hub, Finterest and Clock apply the pack after the accent, so they were not affected).
